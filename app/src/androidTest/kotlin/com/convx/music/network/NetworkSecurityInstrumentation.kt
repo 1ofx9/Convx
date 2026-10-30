@@ -6,9 +6,7 @@ import android.os.Bundle
 import android.security.NetworkSecurityPolicy
 import com.convx.music.artistvideo.ArtistVideoCanvasProvider
 import com.convx.music.canvas.AppleMusicCatalog
-import com.music.lastfm.LastFM
 import com.music.lrclib.LrcLib
-import com.music.spotify.Spotify
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.get
@@ -28,13 +26,10 @@ class NetworkSecurityInstrumentation : Instrumentation() {
         try {
             val policy = NetworkSecurityPolicy.getInstance()
             check(policy.isCleartextTrafficPermitted("localhost"))
-            check(!policy.isCleartextTrafficPermitted("open.spotify.com"))
             runBlocking {
                 val targets = listOf(
-                    Triple(Spotify, "getGqlClient", "https://api-partner.spotify.com/"),
                     Triple(LrcLib, "getClient", "https://lrclib.net/"),
                     Triple(AppleMusicCatalog, "getClient", "https://amp-api.music.apple.com/"),
-                    Triple(LastFM, "getClient", "https://ws.audioscrobbler.com/2.0/"),
                     Triple(ArtistVideoCanvasProvider, "getClient", "https://www.apple.com/"),
                 )
                 for ((provider, getter, url) in targets) {

@@ -51,7 +51,7 @@ class LyricsProviderRepository @Inject constructor(@ApplicationContext private v
         LyricsProviderRegistry.providerIds.associateWith { id ->
             val provider = LyricsProviderRegistry.getProvider(id)
             when {
-                identity.id.startsWith("content://") && provider?.requiresVideoId == true -> LyricsProviderStatus.UNSUPPORTED
+                (identity.id.startsWith("content://") || identity.id.startsWith("convx-network://")) && provider?.requiresVideoId == true -> LyricsProviderStatus.UNSUPPORTED
                 provider == null || preferences[LyricsProviderSettings.enabledKey(id)] == false -> LyricsProviderStatus.DISABLED
                 else -> synchronized(lock) {
                     attempts[Key(identity, provider.id)]?.status ?: LyricsProviderStatus.NOT_FETCHED
@@ -90,7 +90,7 @@ class LyricsProviderRepository @Inject constructor(@ApplicationContext private v
         provider: LyricsProvider, id: String, title: String, artist: String, duration: Int, album: String?,
     ): Result<String> {
         if (!LyricsProviderSettings.isEnabled(context, provider) ||
-            (id.startsWith("content://") && provider.requiresVideoId)
+            ((id.startsWith("content://") || id.startsWith("convx-network://")) && provider.requiresVideoId)
         ) {
             return Result.failure(IllegalStateException("Lyrics provider is unavailable"))
         }

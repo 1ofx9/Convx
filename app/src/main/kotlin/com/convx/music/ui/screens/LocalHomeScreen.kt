@@ -187,7 +187,7 @@ fun LocalHomeScreen(
                             ListQueue(items = localSongs.shuffled().map { it.toMediaItem() }, startIndex = 0),
                         )
                     },
-                    onRecognitionClick = { navController.navigate("recognition") },
+                    onRecognitionClick = null,
                 )
             }
         }

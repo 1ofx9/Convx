@@ -36,9 +36,9 @@ data class MediaMetadata(
     val isVideoSong: Boolean
         get() = musicVideoType != null && musicVideoType != MUSIC_VIDEO_TYPE_ATV
 
-    /** A file on the device: its id is a content URI, not a YouTube video id. */
+    /** A file on the device or network storage: its id is a content/network URI, not a YouTube video id. */
     val isLocalFile: Boolean
-        get() = id.startsWith("content://") || id.startsWith("file://") || id.startsWith("/storage/")
+        get() = id.startsWith("content://") || id.startsWith("file://") || id.startsWith("/storage/") || id.startsWith("convx-network://")
 
     data class Artist(
         val id: String?,

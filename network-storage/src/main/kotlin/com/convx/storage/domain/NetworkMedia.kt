@@ -40,7 +40,19 @@ data class NetworkEntry(val path: String, val name: String, val directory: Boole
 
 data class NetworkLibrary(val tracks: List<NetworkTrack>, val truncated: Boolean = false)
 
-data class NetworkTrack(val id: String, val title: String, val artist: String?, val album: String?, val artwork: String?, val size: Long)
+data class NetworkTrack(
+    val id: String,
+    val title: String,
+    val artist: String?,
+    val album: String?,
+    val artwork: String?,
+    val size: Long,
+    val duration: Int = -1,
+    val year: Int? = null,
+    val trackNumber: Int? = null,
+    val albumId: String? = null,
+    val artistId: String? = null,
+)
 
 object NetworkMedia {
     private val audioExtensions = setOf("mp3", "m4a", "flac", "ogg", "opus", "aac", "wav", "wma", "aif", "aiff", "webm")
@@ -64,6 +76,13 @@ object NetworkMedia {
                 else -> 5
             }
         }?.let { NetworkMediaUri.create(serverId, it.path) }
-        return NetworkTrack(NetworkMediaUri.create(serverId, entry.path), title, artist, parent.substringAfterLast('/').takeIf(String::isNotBlank), artwork, entry.size)
+        return NetworkTrack(
+            id = NetworkMediaUri.create(serverId, entry.path),
+            title = title,
+            artist = artist,
+            album = parent.substringAfterLast('/').takeIf(String::isNotBlank),
+            artwork = artwork,
+            size = entry.size,
+        )
     }
 }

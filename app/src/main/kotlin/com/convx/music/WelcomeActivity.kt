@@ -237,6 +237,25 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
         fontSize = 48.sp
     )
 
+    val audioPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        Manifest.permission.READ_MEDIA_AUDIO
+    } else {
+        Manifest.permission.READ_EXTERNAL_STORAGE
+    }
+
+    var hasAudioPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, audioPermission) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    val audioPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            hasAudioPermission = isGranted
+        }
+    )
+
     var hasNotificationPermission by remember {
         mutableStateOf(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -263,6 +282,10 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    hasAudioPermission = ContextCompat.checkSelfPermission(
+                        context,
+                        audioPermission
+                    ) == PackageManager.PERMISSION_GRANTED
                     hasNotificationPermission = ContextCompat.checkSelfPermission(
                         context,
                         Manifest.permission.POST_NOTIFICATIONS
@@ -356,7 +379,7 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                         Spacer(modifier = Modifier.height(32.dp))
 
                         Text(
-                            text = stringResource(com.convx.music.R.string.welcome_preparing_subtitle),
+                            text = "Lossless self-hosted Navidrome & local music player with Cupertino Liquid Glass.",
                             fontFamily = GoogleSansFlex,
                             style = AppTheme.typography.bodyLarge,
                             color = AppTheme.colorScheme.onSurfaceVariant,
@@ -407,12 +430,48 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                             .verticalScroll(rememberScrollState())
                     ) {
                         PermissionCard(
+                            icon = painterResource(com.convx.music.R.drawable.library_music_filled),
+                            iconColor = Color(0xFF80da88),
+                            iconTint = Color(0xFF00522c),
+                            title = "Music Library Access",
+                            description = "Required to scan, index, and play your local audio files with zero quality loss.",
+                            shape = topCardShape,
+                            control = {
+                                Switch(
+                                    checked = hasAudioPermission,
+                                    onCheckedChange = {
+                                        if (hasAudioPermission) {
+                                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                                data = Uri.parse("package:${context.packageName}")
+                                            }
+                                            context.startActivity(intent)
+                                        } else {
+                                            audioPermissionLauncher.launch(audioPermission)
+                                        }
+                                    }
+                                )
+                            },
+                            onClick = {
+                                if (hasAudioPermission) {
+                                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                        data = Uri.parse("package:${context.packageName}")
+                                    }
+                                    context.startActivity(intent)
+                                } else {
+                                    audioPermissionLauncher.launch(audioPermission)
+                                }
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        PermissionCard(
                             icon = rememberVectorPainter(Icons.Rounded.Notifications),
                             iconColor = Color(0xFFffaee4),
                             iconTint = Color(0xFF8d0053),
                             title = stringResource(com.convx.music.R.string.perm_notif_title),
                             description = stringResource(com.convx.music.R.string.perm_notif_desc),
-                            shape = if (BuildConfig.FLAVOR.contains("gms", ignoreCase = true)) topCardShape else RoundedCornerShape(20.dp),
+                            shape = if (BuildConfig.FLAVOR.contains("gms", ignoreCase = true)) middleCardShape else bottomCardShape,
                             control = {
                                 Switch(
                                     checked = hasNotificationPermission,
@@ -656,11 +715,11 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                             Spacer(modifier = Modifier.height(2.dp))
 
                             FeatureCard(
-                                icon = rememberVectorPainter(Icons.Rounded.Forum),
+                                icon = rememberVectorPainter(Icons.Rounded.CloudDownload),
                                 iconColor = Color(0xFF67d4ff),
                                 iconTint = Color(0xFF004e5d),
-                                title = stringResource(com.convx.music.R.string.feat_discord_title),
-                                description = stringResource(com.convx.music.R.string.feat_discord_desc),
+                                title = "Navidrome Self-Hosted",
+                                description = "Stream your music library in bit-perfect lossless quality with synchronized lyrics from your Navidrome server.",
                                 shape = middleCardShape
                             )
 

@@ -7,6 +7,7 @@ package com.convx.music.ui.screens.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -49,7 +50,7 @@ import com.convx.music.viewmodels.NetworkStorageViewModel
 import com.convx.storage.domain.NetworkProtocol
 import com.convx.storage.domain.NetworkServer
 
-/** SMB and WebDAV music sources: add a server, test it, and scan its audio into the library. */
+/** Navidrome and self-hosted music sources: add a server, test it, and scan its audio into the library. */
 @Composable
 fun NetworkStorageSettingsScreen(
     navController: NavController,
@@ -66,12 +67,12 @@ fun NetworkStorageSettingsScreen(
 
     SettingsPage(
         navController = navController,
-        title = stringResource(R.string.network_storage),
+        title = "Navidrome Server",
         pageColor = AppTheme.colorScheme.background,
         horizontalPadding = 24.dp,
     ) {
         Text(
-            text = stringResource(R.string.network_storage_desc),
+            text = "Connect your Navidrome music server to stream your library in original, bit-perfect lossless quality with synchronized lyrics.",
             style = AppTheme.typography.bodyMedium,
             color = AppTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 16.dp, bottom = 16.dp),
@@ -80,7 +81,7 @@ fun NetworkStorageSettingsScreen(
         Button(onClick = { showAdd = true }, modifier = Modifier.fillMaxWidth()) {
             SymbolIcon(symbol = sf("plus"), contentDescription = null, size = 18.dp)
             Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.network_storage_add))
+            Text("Add Navidrome Server")
         }
 
         status?.let {
@@ -154,12 +155,18 @@ private fun ServerRow(
     onScan: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    val protocolLabel = when (server.protocol) {
+        NetworkProtocol.NAVIDROME -> "Navidrome"
+        NetworkProtocol.WEBDAV -> "WebDAV"
+        NetworkProtocol.SMB -> "SMB"
+    }
+
     Column(Modifier.fillMaxWidth().padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(server.name, style = AppTheme.typography.titleSmall)
                 Text(
-                    text = (if (server.protocol == NetworkProtocol.SMB) "SMB  " else "WebDAV  ") + server.address,
+                    text = "$protocolLabel  ${server.address}",
                     style = AppTheme.typography.bodySmall,
                     color = AppTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -181,51 +188,90 @@ private fun AddServerDialog(
     onDismiss: () -> Unit,
     onSave: (NetworkProtocol, String, String, String, String, String) -> Unit,
 ) {
-    var protocol by remember { mutableStateOf(NetworkProtocol.SMB) }
+    var protocol by remember { mutableStateOf(NetworkProtocol.NAVIDROME) }
     var name by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     var user by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var domain by remember { mutableStateOf("") }
 
+    val protocols = listOf(
+        NetworkProtocol.NAVIDROME to "Navidrome",
+        NetworkProtocol.WEBDAV to "WebDAV",
+        NetworkProtocol.SMB to "SMB",
+    )
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.network_storage_add)) },
+        title = { Text(if (protocol == NetworkProtocol.NAVIDROME) "Add Navidrome Server" else stringResource(R.string.network_storage_add)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (protocol == NetworkProtocol.SMB) {
-                        Button(onClick = {}) { Text("SMB") }
-                        OutlinedButton(onClick = { protocol = NetworkProtocol.WEBDAV }) { Text("WebDAV") }
-                    } else {
-                        OutlinedButton(onClick = { protocol = NetworkProtocol.SMB }) { Text("SMB") }
-                        Button(onClick = {}) { Text("WebDAV") }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    protocols.forEach { (p, label) ->
+                        if (protocol == p) {
+                            Button(
+                                onClick = {},
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 2.dp, vertical = 6.dp),
+                            ) {
+                                Text(label, style = AppTheme.typography.labelSmall, maxLines = 1)
+                            }
+                        } else {
+                            OutlinedButton(
+                                onClick = { protocol = p },
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 2.dp, vertical = 6.dp),
+                            ) {
+                                Text(label, style = AppTheme.typography.labelSmall, maxLines = 1)
+                            }
+                        }
                     }
                 }
-                OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.network_storage_name)) }, singleLine = true)
                 OutlinedTextField(
-                    address, { address = it },
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(if (protocol == NetworkProtocol.NAVIDROME) "Server Name (e.g. My Navidrome)" else stringResource(R.string.network_storage_name)) },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = address,
+                    onValueChange = { address = it },
                     label = {
                         Text(
-                            stringResource(
-                                if (protocol == NetworkProtocol.SMB) R.string.network_storage_address_smb
-                                else R.string.network_storage_address_webdav,
-                            ),
+                            when (protocol) {
+                                NetworkProtocol.NAVIDROME -> "Server URL (e.g. https://music.myhost.com)"
+                                NetworkProtocol.WEBDAV -> stringResource(R.string.network_storage_address_webdav)
+                                NetworkProtocol.SMB -> stringResource(R.string.network_storage_address_smb)
+                            },
                         )
                     },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 )
-                OutlinedTextField(user, { user = it }, label = { Text(stringResource(R.string.network_storage_user)) }, singleLine = true)
                 OutlinedTextField(
-                    password, { password = it },
+                    value = user,
+                    onValueChange = { user = it },
+                    label = { Text(stringResource(R.string.network_storage_user)) },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
                     label = { Text(stringResource(R.string.network_storage_password)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 )
                 if (protocol == NetworkProtocol.SMB) {
-                    OutlinedTextField(domain, { domain = it }, label = { Text(stringResource(R.string.network_storage_domain)) }, singleLine = true)
+                    OutlinedTextField(
+                        value = domain,
+                        onValueChange = { domain = it },
+                        label = { Text(stringResource(R.string.network_storage_domain)) },
+                        singleLine = true,
+                    )
                 }
             }
         },

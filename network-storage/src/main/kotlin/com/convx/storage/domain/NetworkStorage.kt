@@ -35,4 +35,5 @@ interface NetworkLibraryRepository {
     suspend fun browse(id: String, folder: String = ""): List<NetworkEntry>
     suspend fun scan(id: String, maxTracks: Int = 10_000): NetworkLibrary
     suspend fun readArtwork(uri: String, maxBytes: Int = 16 * 1024 * 1024): ByteArray
+    suspend fun fetchLyrics(uri: String, artist: String? = null, title: String? = null): String? = null
 }

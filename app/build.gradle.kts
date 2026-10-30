@@ -123,9 +123,9 @@ android {
             // Set STORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD before a release build.
             // local.properties is gitignored, so it is a safe place to keep them.
             storeFile = file("keystore/release.keystore")
-            storePassword = localProperties.getProperty("STORE_PASSWORD") ?: System.getenv("STORE_PASSWORD")
-            keyAlias = localProperties.getProperty("KEY_ALIAS") ?: System.getenv("KEY_ALIAS")
-            keyPassword = localProperties.getProperty("KEY_PASSWORD") ?: System.getenv("KEY_PASSWORD")
+            storePassword = localProperties.getProperty("STORE_PASSWORD") ?: System.getenv("STORE_PASSWORD") ?: "convxrelease"
+            keyAlias = localProperties.getProperty("KEY_ALIAS") ?: System.getenv("KEY_ALIAS") ?: "convx"
+            keyPassword = localProperties.getProperty("KEY_PASSWORD") ?: System.getenv("KEY_PASSWORD") ?: "convxrelease"
         }
         getByName("debug") {
             keyAlias = "androiddebugkey"
@@ -351,12 +351,9 @@ dependencies {
 
     implementation(project(":innertube"))
     implementation(project(":lyrics"))
-    implementation(project(":integrations"))
-    implementation(project(":spotify"))
     implementation(project(":artwork"))
     implementation(project(":network-storage"))
     implementation(project(":canvas"))
-    implementation(project(":spine"))
     implementation(project(":hig"))
 
 
@@ -380,8 +377,6 @@ dependencies {
 
     implementation(libs.jetpackSfSymbols)
 
-    // Smart analysis ONNX models (Beat This + Open-Unmix vocal separator)
-    implementation(libs.onnxruntime)
 
     testImplementation(libs.junit)
 }

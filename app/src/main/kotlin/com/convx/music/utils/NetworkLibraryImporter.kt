@@ -18,9 +18,9 @@ import java.time.LocalDateTime
 import timber.log.Timber
 
 /**
- * Puts the audio found on an SMB or WebDAV source into the library as local songs.
+ * Puts the audio found on an SMB, WebDAV, or Navidrome source into the library as local songs.
  * A song's id is its `convx-network://` URI, which the player routes back through the
- * network data source, so nothing is copied to the phone.
+ * network data source, streaming lossless audio directly without copying to the phone.
  */
 object NetworkLibraryImporter {
 
@@ -44,18 +44,21 @@ object NetworkLibraryImporter {
         if (database.getSongById(track.id) != null) return false
         val artistName = track.artist?.takeIf { it.isNotBlank() } ?: "Unknown Artist"
         val albumName = track.album.orEmpty()
-        val artistId = "network_artist_${artistName.hashCode()}"
-        val albumId = "network_album_${albumName.hashCode()}"
+        val artistId = track.artistId?.takeIf { it.isNotBlank() } ?: "network_artist_${artistName.hashCode()}"
+        val albumId = track.albumId?.takeIf { it.isNotBlank() } ?: "network_album_${albumName.hashCode()}"
         val now = LocalDateTime.now()
+        val duration = if (track.duration > 0) track.duration else -1
         return try {
             database.withTransaction {
                 upsert(
                     SongEntity(
                         id = track.id,
                         title = track.title,
+                        duration = duration,
                         thumbnailUrl = track.artwork,
                         albumId = albumId.takeIf { albumName.isNotBlank() },
                         albumName = albumName.takeIf { it.isNotBlank() },
+                        year = track.year,
                         isLocal = true,
                         inLibrary = now,
                     ),
@@ -68,13 +71,14 @@ object NetworkLibraryImporter {
                             id = albumId,
                             title = albumName,
                             thumbnailUrl = track.artwork,
-                            songCount = 1,
+                            year = track.year,
+                            songCount = 0,
                             duration = 0,
                             isLocal = true,
                             inLibrary = now,
                         ),
                     )
-                    insert(SongAlbumMap(songId = track.id, albumId = albumId, index = 0))
+                    insert(SongAlbumMap(songId = track.id, albumId = albumId, index = track.trackNumber ?: 0))
                 }
             }
             true

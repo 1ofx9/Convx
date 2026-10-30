@@ -82,65 +82,6 @@ fun SongTransitionsScreen(navController: NavController) {
     val database = com.convx.music.LocalDatabase.current.get()
     val analysis by LibraryAnalysis.progress.collectAsStateWithLifecycle()
     val scope = androidx.compose.runtime.rememberCoroutineScope()
-    var stemBytes by remember { mutableStateOf(StemStore.totalBytes(context)) }
-    val (stemQuality, onStemQualityChange) = rememberEnumPreference(StemQualityKey, StemQuality.FAST)
-    val (modelUrl, onModelUrlChange) = rememberPreference(DemucsModelUrlKey, "")
-    var showStemQualityDialog by rememberSaveable { mutableStateOf(false) }
-    var showLibraryStemNotice by rememberSaveable { mutableStateOf(false) }
-    var libraryStemBytes by remember { mutableStateOf(0L) }
-    var showModelDialog by rememberSaveable { mutableStateOf(false) }
-    var modelInstalled by remember { mutableStateOf(DemucsModel.isInstalled(context)) }
-    var modelProgress by remember { mutableStateOf<Float?>(null) }
-
-    if (showLibraryStemNotice) {
-        com.convx.music.ui.component.StemNoticeDialog(
-            bytes = libraryStemBytes,
-            onDismiss = { showLibraryStemNotice = false },
-            onConfirm = {
-                showLibraryStemNotice = false
-                scope.launch(Dispatchers.IO) { LibraryAnalysis.analyzeLibrary(context, database, stems = true) }
-            },
-        )
-    }
-    if (showStemQualityDialog) {
-        EnumDialog(
-            title = stringResource(R.string.stem_quality),
-            current = stemQuality,
-            values = StemQuality.entries,
-            valueText = {
-                stringResource(if (it == StemQuality.FAST) R.string.stem_quality_fast else R.string.stem_quality_demucs)
-            },
-            onSelect = {
-                onStemQualityChange(it)
-                showStemQualityDialog = false
-            },
-            onDismiss = { showStemQualityDialog = false },
-        )
-    }
-    if (showModelDialog) {
-        TextFieldDialog(
-            title = { Text(stringResource(R.string.demucs_model)) },
-            initialTextFieldValue = TextFieldValue(modelUrl),
-            placeholder = { Text("https://…/htdemucs.onnx") },
-            extraContent = { Text(stringResource(R.string.demucs_notice), modifier = Modifier.padding(top = 8.dp)) },
-            onDone = { url ->
-                onModelUrlChange(url.trim())
-                scope.launch {
-                    modelProgress = 0f
-                    val result = DemucsModel.install(context, url.trim()) { modelProgress = it }
-                    modelProgress = null
-                    modelInstalled = DemucsModel.isInstalled(context)
-                    val message = when (result) {
-                        DemucsInstall.OK -> R.string.demucs_ready
-                        DemucsInstall.DOWNLOAD_FAILED -> R.string.demucs_download_failed
-                        DemucsInstall.INCOMPATIBLE -> R.string.demucs_incompatible
-                    }
-                    android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show()
-                }
-            },
-            onDismiss = { showModelDialog = false },
-        )
-    }
     if (showReverbDialog) {
         EnumDialog(
             title = stringResource(R.string.dj_reverb_type),
@@ -244,56 +185,6 @@ fun SongTransitionsScreen(navController: NavController) {
                                 onClick = {
                                     if (analysis.running) LibraryAnalysis.cancel()
                                     else scope.launch(Dispatchers.IO) { LibraryAnalysis.analyzeLibrary(context, database) }
-                                },
-                            ),
-                            IosSettingsItem(
-                                icon = painterResource(R.drawable.equalizer),
-                                title = { Text(stringResource(R.string.split_stems_library)) },
-                                onClick = {
-                                    scope.launch(Dispatchers.IO) {
-                                        val stems = if (stemQuality == StemQuality.DEMUCS && modelInstalled) 4 else 2
-                                        libraryStemBytes = database.localDurationTotal() * stems * 96_000L / 8L
-                                        showLibraryStemNotice = true
-                                    }
-                                },
-                            ),
-                            IosSettingsItem(
-                                icon = painterResource(R.drawable.equalizer),
-                                title = { Text(stringResource(R.string.stem_quality)) },
-                                description = {
-                                    Text(stringResource(if (stemQuality == StemQuality.FAST) R.string.stem_quality_fast else R.string.stem_quality_demucs))
-                                },
-                                onClick = { showStemQualityDialog = true },
-                            ),
-                            IosSettingsItem(
-                                icon = painterResource(R.drawable.equalizer),
-                                title = { Text(stringResource(R.string.demucs_model)) },
-                                description = {
-                                    Text(
-                                        modelProgress?.let { stringResource(R.string.demucs_downloading, (it * 100).toInt()) }
-                                            ?: if (modelInstalled) {
-                                                stringResource(R.string.demucs_installed, android.text.format.Formatter.formatShortFileSize(context, DemucsModel.sizeBytes(context)))
-                                            } else stringResource(R.string.demucs_missing),
-                                    )
-                                },
-                                onClick = {
-                                    if (modelProgress == null) {
-                                        if (modelInstalled) {
-                                            DemucsModel.delete(context)
-                                            modelInstalled = false
-                                        } else showModelDialog = true
-                                    }
-                                },
-                            ),
-                            IosSettingsItem(
-                                icon = painterResource(R.drawable.equalizer),
-                                title = { Text(stringResource(R.string.stems_storage)) },
-                                description = { Text(android.text.format.Formatter.formatShortFileSize(context, stemBytes)) },
-                                onClick = {
-                                    scope.launch(Dispatchers.IO) {
-                                        StemStore.clear(context)
-                                        stemBytes = StemStore.totalBytes(context)
-                                    }
                                 },
                             ),
                         ),

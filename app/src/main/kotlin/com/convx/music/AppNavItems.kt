@@ -14,8 +14,8 @@ import com.convx.music.constants.HiddenNavigationRoutesKey
 import com.convx.music.ui.screens.Screens
 import com.convx.music.utils.rememberPreference
 
-/** Whether the app runs on device files only. Provided once at the root; screens read this instead of the preference. */
-val LocalLocalOnlyMode = androidx.compose.runtime.staticCompositionLocalOf { false }
+/** Whether the app runs on self-hosted and device files only. Provided once at the root; screens read this instead of the preference. */
+val LocalLocalOnlyMode = androidx.compose.runtime.staticCompositionLocalOf { true }
 
 /** Destinations shown by the app's navigation bars. */
 @Stable
@@ -28,25 +28,20 @@ class AppNavItems(
 
 @Composable
 fun rememberAppNavItems(): AppNavItems {
-    val (listenTogetherInTopBar) = rememberPreference(ListenTogetherInTopBarKey, defaultValue = true)
-    // Read once here because both navigation bars use this preference.
-    val (localOnlyMode) = rememberPreference(LocalOnlyModeKey, false)
+    val (listenTogetherInTopBar) = rememberPreference(ListenTogetherInTopBarKey, defaultValue = false)
+    // Read once here because both navigation bars use this preference. Defaults to true for Navidrome/Local.
+    val (localOnlyMode) = rememberPreference(LocalOnlyModeKey, true)
     val (hiddenNavigationRoutes) = rememberPreference(HiddenNavigationRoutesKey, "")
     val hiddenRoutes = remember(hiddenNavigationRoutes) {
         hiddenNavigationRoutes.lineSequence().map(String::trim).filter(String::isNotEmpty).toSet()
     }
     val navigationItems = remember(listenTogetherInTopBar, localOnlyMode, hiddenRoutes) {
         val screens = Screens.mainScreens(localOnlyMode)
-        val visible = if (listenTogetherInTopBar) {
-            screens.filter { it != Screens.ListenTogether }
-        } else {
-            screens
-        }
+        val visible = screens.filter { it != Screens.ListenTogether && it != Screens.Radio && it != Screens.Explore }
         visible.filter { it == Screens.Search || it.route !in hiddenRoutes }
     }
-    // Explore is only shown in the floating navigation bar, and is online-only.
     val floatingNavigationItems = remember(navigationItems, localOnlyMode, hiddenRoutes) {
-        if (localOnlyMode || Screens.Explore.route in hiddenRoutes) navigationItems else navigationItems + Screens.Explore
+        navigationItems
     }
     return remember(listenTogetherInTopBar, localOnlyMode, navigationItems, floatingNavigationItems) {
         AppNavItems(listenTogetherInTopBar, localOnlyMode, navigationItems, floatingNavigationItems)

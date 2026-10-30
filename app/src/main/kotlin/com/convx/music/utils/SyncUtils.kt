@@ -15,9 +15,7 @@ import com.music.innertube.models.PlaylistItem
 import com.music.innertube.models.SongItem
 import com.music.innertube.utils.completed
 import com.music.innertube.utils.parseCookieString
-import com.music.lastfm.LastFM
 import com.convx.music.constants.InnerTubeCookieKey
-import com.convx.music.constants.LastFMUseSendLikes
 import com.convx.music.constants.LastFullSyncKey
 import com.convx.music.constants.PendingPlaylistDeletesKey
 import com.convx.music.constants.SYNC_COOLDOWN
@@ -412,18 +410,7 @@ class SyncUtils @Inject constructor(
             Timber.e(e, "Failed to like song on YouTube: ${s.id}")
         }
 
-        if (context.dataStore.get(LastFMUseSendLikes, false)) {
-            try {
-                val dbSong = database.song(s.id).firstOrNull()
-                LastFM.setLoveStatus(
-                    artist = dbSong?.artists?.joinToString { a -> a.name } ?: "",
-                    track = s.title,
-                    love = s.liked
-                )
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to update LastFM love status")
-            }
-        }
+
     }
 
     private suspend fun executeSyncLikedSongs() = withContext(Dispatchers.IO) {

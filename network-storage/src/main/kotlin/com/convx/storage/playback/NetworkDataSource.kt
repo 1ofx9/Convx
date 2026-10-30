@@ -5,6 +5,7 @@ import androidx.media3.common.C
 import androidx.media3.common.PlaybackException
 import androidx.media3.datasource.*
 import androidx.media3.datasource.okhttp.OkHttpDataSource
+import com.convx.storage.data.NavidromeFileSource
 import com.convx.storage.data.SmbFileSource
 import com.convx.storage.data.WebDavFileSource
 import com.convx.storage.domain.*
@@ -16,6 +17,7 @@ class NetworkDataSourceFactory(
     private val store: NetworkServerStore,
     private val webDav: WebDavFileSource,
     private val smb: SmbFileSource,
+    private val navidrome: NavidromeFileSource,
 ) : DataSource.Factory {
     override fun createDataSource(): DataSource = RoutingSource(downstream.createDataSource())
 
@@ -39,6 +41,12 @@ class NetworkDataSourceFactory(
                 is NetworkServer.Smb -> {
                     active = SmbDataSource(server, location.path, smb).apply { listeners.forEach(::addTransferListener) }
                     active.open(dataSpec)
+                }
+                is NetworkServer.Navidrome -> {
+                    val streamUrl = navidrome.resolveStreamUrl(server, location.path)
+                    val factory = OkHttpDataSource.Factory(navidrome.client)
+                    active = factory.createDataSource().apply { listeners.forEach(::addTransferListener) }
+                    active.open(dataSpec.buildUpon().setUri(streamUrl).build())
                 }
             }
         }

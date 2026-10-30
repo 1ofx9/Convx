@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -67,7 +68,6 @@ import com.convx.music.LocalPlayerAwareWindowInsets
 import com.convx.music.R
 import com.convx.music.core.updater.getAutoUpdateCheckSetting
 import com.convx.music.core.updater.getUpdateAvailableState
-import com.convx.music.ui.component.AccountAvatar
 import com.convx.music.ui.component.SymbolIcon
 import com.convx.music.ui.component.sf
 import com.convx.music.ui.component.shapes.ContinuousCapsule
@@ -81,26 +81,17 @@ import com.convx.music.utils.rememberPreference
 import com.convx.music.ui.ios.compat.Icon
 import com.convx.music.ui.ios.compat.Switch
 import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.background
 import androidx.compose.ui.res.painterResource
 import com.convx.music.viewmodels.HomeViewModel
 
 /** Root rows that open a page directly rather than a category. */
 private val historyLink = SettingsLink("History", R.drawable.music_history, { systemCyan }, SettingsAction.Route("history"))
 private val statsLink = SettingsLink("Stats", R.drawable.stats, { systemYellow }, SettingsAction.Route("stats"))
-private val listenTogetherLink = SettingsLink("Listen Together", R.drawable.group, { systemCyan }, SettingsAction.Route("listen_together_from_topbar"))
 private val updateLink = SettingsLink("Software Update", R.drawable.network_update, { systemGray }, SettingsAction.Route("settings/update"))
 
 /** The root, grouped the way the categories are read: what you hear, what you see, your stuff, help. */
 private val rootGroups = listOf(
-    listOf(listenTogetherLink),
     listOf(SettingsHubs.player.asLink(), SettingsHubs.playback.asLink(), SettingsHubs.appearance.asLink()),
     listOf(SettingsHubs.library.asLink(), SettingsHubs.accounts.asLink()),
     listOf(SettingsHubs.privacy.asLink(), historyLink, statsLink),
@@ -118,9 +109,6 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val updateAvailable = getUpdateAvailableState(context) && getAutoUpdateCheckSetting(context)
-    val homeViewModel: HomeViewModel = hiltViewModel()
-    val accountName by homeViewModel.accountName.collectAsStateWithLifecycle()
-    val accountImageUrl by homeViewModel.accountImageUrl.collectAsStateWithLifecycle()
     val onAction = rememberSettingsActionHandler(navController)
 
     var query by rememberSaveable { mutableStateOf("") }
@@ -140,7 +128,7 @@ fun SettingsScreen(
                 listState = rememberLazyListState(),
             ) {
                 item("profile") {
-                    ProfileCard(accountName, accountImageUrl) { navController.navigate("settings/account") }
+                    ProfileCard { navController.navigate("settings/network_storage") }
                 }
                 if (query.isBlank()) item("localOnly") {
                     Spacer(Modifier.height(20.dp))
@@ -199,8 +187,10 @@ fun SettingsScreen(
                 }
             }
         } else {
-            rootList(false)
-            SearchBar(query, { query = it }, Modifier.align(Alignment.BottomCenter))
+            Box(Modifier.fillMaxSize()) {
+                rootList(false)
+                SearchBar(query, { query = it }, Modifier.align(Alignment.BottomCenter))
+            }
         }
     }
 }
@@ -216,24 +206,20 @@ private fun rememberSearchEntries(): List<SearchEntry> {
             listOf(SearchEntry(hub.asLink(), "Settings")) +
                 hub.groups.flatMap { g -> g.links.map { SearchEntry(it, hub.title) } }
         }
-        val treeTitles = fromTree.map { it.link.title.lowercase() }.toSet()
-        fromTree + settings.filter { it.title.lowercase() !in treeTitles }.map { s ->
+        val fromFlat = settings.map { s ->
             SearchEntry(
                 SettingsLink(
                     s.title,
                     R.drawable.search,
                     { systemGray },
-                    when {
-                        s.opensLyricsSheet -> SettingsAction.LyricsStyle
-                        s.opensAppleMusicImport -> SettingsAction.AppleMusicImport
-                        else -> SettingsAction.Route(s.route)
-                    },
+                    SettingsAction.Route(s.route),
                     s.description,
                     s.keywords,
                 ),
                 s.category,
             )
         }
+        (fromTree + fromFlat).distinctBy { it.link.title + it.link.action.toString() }
     }
 }
 
@@ -249,7 +235,7 @@ private fun SearchResults(entries: List<SearchEntry>, query: String, onAction: (
     }
     if (hits.isEmpty()) {
         Text(
-            "No settings found for “${query.trim()}”",
+            "No settings found for \"${query.trim()}\"",
             style = IosTheme.typography.body,
             color = IosTheme.colors.secondaryLabel,
             textAlign = TextAlign.Center,
@@ -268,7 +254,7 @@ private fun SearchResults(entries: List<SearchEntry>, query: String, onAction: (
 /** Local only mode: a root-level switch, so it is one tap from the top of Settings. */
 @Composable
 private fun LocalOnlyRow() {
-    val (localOnly, setLocalOnly) = rememberPreference(LocalOnlyModeKey, defaultValue = false)
+    val (localOnly, setLocalOnly) = rememberPreference(LocalOnlyModeKey, defaultValue = true)
     Row(
         Modifier
             .fillMaxWidth()
@@ -289,7 +275,7 @@ private fun LocalOnlyRow() {
         Column(Modifier.weight(1f)) {
             Text(stringResource(R.string.local_only_mode), style = IosTheme.typography.body, color = IosTheme.colors.label)
             Text(
-                stringResource(R.string.local_only_mode_desc),
+                "Play exclusively from Navidrome and local files in lossless quality",
                 style = IosTheme.typography.footnote,
                 color = IosTheme.colors.secondaryLabel,
             )
@@ -299,8 +285,7 @@ private fun LocalOnlyRow() {
 }
 
 @Composable
-private fun ProfileCard(accountName: String, accountImageUrl: String?, onClick: () -> Unit) {
-    val signedIn = accountName.isNotBlank() && !accountName.equals("Guest", ignoreCase = true)
+private fun ProfileCard(onClick: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -310,21 +295,30 @@ private fun ProfileCard(accountName: String, accountImageUrl: String?, onClick: 
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AccountAvatar(
-            imageUrl = accountImageUrl.takeIf { signedIn },
-            name = accountName.takeIf { signedIn }.orEmpty(),
-            size = 60.dp,
-        )
+        Box(
+            Modifier
+                .size(60.dp)
+                .clip(ContinuousRoundedRectangle(14.dp))
+                .background(IosTheme.colors.systemGreen),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painterResource(R.drawable.storage),
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(32.dp),
+            )
+        }
         Column(Modifier.weight(1f).padding(start = 16.dp)) {
             Text(
-                if (signedIn) accountName else "Sign in",
+                "Self-Hosted & Local Music",
                 style = IosTheme.typography.title3,
                 fontWeight = FontWeight.SemiBold,
                 color = IosTheme.colors.label,
                 maxLines = 1,
             )
             Text(
-                if (signedIn) "YouTube Music, sync and more" else "YouTube Music, Spotify and more",
+                "Navidrome and local storage",
                 style = IosTheme.typography.footnote,
                 color = IosTheme.colors.secondaryLabel,
                 maxLines = 1,
@@ -363,7 +357,6 @@ private fun SearchBar(value: String, onValueChange: (String) -> Unit, modifier: 
                     .shadow(10.dp, ContinuousCapsule(), clip = false)
                     .clip(ContinuousCapsule())
                     .background(colors.secondarySystemGroupedBackground)
-                    // The whole pill focuses the field, not just the line of text inside it.
                     .clickable(interactionSource = null, indication = null) {
                         focusRequester.requestFocus()
                         keyboard?.show()

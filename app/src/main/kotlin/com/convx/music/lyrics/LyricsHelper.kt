@@ -188,8 +188,8 @@ constructor(
         currentLyricsJob = null
     }
 
-    /** MediaStore content IDs cannot be used by providers that require a YouTube video ID. */
-    private fun isLocalSong(id: String): Boolean = id.startsWith("content://")
+    /** MediaStore content IDs and network storage tracks cannot be used by providers that require a YouTube video ID. */
+    private fun isLocalSong(id: String): Boolean = id.startsWith("content://") || id.startsWith("convx-network://")
 
     private fun hasNetworkConnection(): Boolean = try {
         networkConnectivity.isCurrentlyConnected()

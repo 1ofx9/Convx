@@ -113,7 +113,6 @@ fun AlbumMenu(
     var songs by remember {
         mutableStateOf(emptyList<Song>())
     }
-    var showSplitNotice by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
     var showCoverSearch by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
     if (showCoverSearch) {
         com.convx.music.ui.component.CoverSearchDialog(
@@ -122,24 +121,6 @@ fun AlbumMenu(
             apply = { url -> com.convx.music.utils.SongBundle.applyAlbumCover(context, database, album.id, url) },
         )
     }
-    val (stemQuality) = com.convx.music.utils.rememberEnumPreference(com.convx.music.constants.StemQualityKey, com.convx.music.playback.smart.StemQuality.FAST)
-    val stemCount = if (stemQuality == com.convx.music.playback.smart.StemQuality.DEMUCS && com.convx.music.playback.smart.DemucsModel.isInstalled(context)) 4 else 2
-    if (showSplitNotice) {
-        val eligible = songs.filter { (it.song.isLocal || it.song.isDownloaded) && it.song.duration in 1..com.convx.music.playback.smart.StemSeparator.MAX_SECONDS }
-        com.convx.music.ui.component.StemNoticeDialog(
-            bytes = eligible.sumOf { com.convx.music.playback.smart.StemStore.estimatedBytes(it.song.duration, stemCount) },
-            onDismiss = { showSplitNotice = false },
-            onConfirm = {
-                showSplitNotice = false
-                com.convx.music.playback.dj.LibraryAnalysis.analyze(
-                    context,
-                    eligible.map { com.convx.music.playback.dj.LibraryAnalysis.Target(it.id, it.song.duration, it.song.title, stems = true) },
-                )
-                onDismiss()
-            },
-        )
-    }
-
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
@@ -372,13 +353,7 @@ fun AlbumMenu(
                             onDismiss()
                         }
                     ) else null,
-                    if (songs.any { (it.song.isLocal || it.song.isDownloaded) && it.song.duration > 0 }) NewAction(
-                        icon = {
-                            SymbolIcon(symbol = sf("waveform.path"), contentDescription = null, size = 28.dp, tint = AppTheme.colorScheme.onSurfaceVariant)
-                        },
-                        text = stringResource(R.string.split_stems_album),
-                        onClick = { showSplitNotice = true }
-                    ) else null,
+                    
                     if (album.album.isLocal) null else NewAction(
                         icon = {
                             SymbolIcon(symbol = sf("square.and.arrow.up"), contentDescription = null, size = 28.dp, tint = AppTheme.colorScheme.onSurfaceVariant)

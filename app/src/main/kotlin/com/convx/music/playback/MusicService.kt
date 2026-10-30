@@ -88,7 +88,6 @@ import com.google.common.util.concurrent.MoreExecutors
 import com.music.innertube.YouTube
 import com.music.innertube.models.SongItem
 import com.music.innertube.models.WatchEndpoint
-import com.music.lastfm.LastFM
 import com.convx.music.MainActivity
 import com.convx.music.R
 import com.convx.music.lyrics.LyricsSyncLevel
@@ -666,7 +665,7 @@ class MusicService :
             requestAnalysis = { mediaItem, durationMs ->
                 // Device files are analysed in place; streamed songs look up the cache by the `v` parameter.
                 val id = mediaItem.mediaId
-                val uri = if (id.startsWith("content://") || id.startsWith("file://")) id.toUri()
+                val uri = if (id.startsWith("content://") || id.startsWith("file://") || id.startsWith("convx-network://")) id.toUri()
                 else "https://music.youtube.com/watch?v=$id".toUri()
                 trackAnalyzer?.request(mediaItem.mediaId, uri, durationMs / 1000.0)
             },
@@ -850,7 +849,17 @@ class MusicService :
                     }
                 }
             }
-            val initial = existing?.let { LyricsWithProvider(it.lyrics, it.provider) }
+            if (existing == null && metadata.id.startsWith(com.convx.storage.domain.NetworkMediaUri.Scheme + "://")) {
+                runCatching {
+                    networkRepository.fetchLyrics(metadata.id, metadata.artists.firstOrNull()?.name, metadata.title)
+                }.getOrNull()?.takeIf { it.isNotBlank() }?.let { serverLyrics ->
+                    persistUpgrade(LyricsWithProvider(serverLyrics, "Navidrome"))
+                    if (LyricsSyncLevel.detect(serverLyrics) == LyricsSyncLevel.LINE || LyricsSyncLevel.detect(serverLyrics) == LyricsSyncLevel.WORD) {
+                        return@collectLatest
+                    }
+                }
+            }
+            val initial = database.lyrics(metadata.id).first()?.let { LyricsWithProvider(it.lyrics, it.provider) }
             val found = lyricsHelper.getLyrics(metadata, initial, ::persistUpgrade)
             if (found.lyrics != LyricsEntity.LYRICS_NOT_FOUND || lastWritten == null || changed) persistUpgrade(found)
 
@@ -946,6 +955,7 @@ class MusicService :
     }
 
     private fun observeDiscordPreferences() {
+        return // Discord RPC scrobbling disabled
         dataStore.data
             .map { it[DiscordTokenKey] to (it[EnableDiscordRPCKey] ?: true) }
             .debounce(300)
@@ -997,9 +1007,9 @@ class MusicService :
             .distinctUntilChanged()
             .collect(scope) { enabled ->
                 if (enabled && scrobbleManager == null) {
-                    val delayPercent = dataStore.get(ScrobbleDelayPercentKey, LastFM.DEFAULT_SCROBBLE_DELAY_PERCENT)
-                    val minSongDuration = dataStore.get(ScrobbleMinSongDurationKey, LastFM.DEFAULT_SCROBBLE_MIN_SONG_DURATION)
-                    val delaySeconds = dataStore.get(ScrobbleDelaySecondsKey, LastFM.DEFAULT_SCROBBLE_DELAY_SECONDS)
+                    val delayPercent = dataStore.get(ScrobbleDelayPercentKey, 0.5f)
+                    val minSongDuration = dataStore.get(ScrobbleMinSongDurationKey, 30)
+                    val delaySeconds = dataStore.get(ScrobbleDelaySecondsKey, 50)
                     scrobbleManager = ScrobbleManager(
                         scope,
                         minSongDuration = minSongDuration,
@@ -1037,9 +1047,9 @@ class MusicService :
         dataStore.data
             .map { prefs ->
                 Triple(
-                    prefs[ScrobbleDelayPercentKey] ?: LastFM.DEFAULT_SCROBBLE_DELAY_PERCENT,
-                    prefs[ScrobbleMinSongDurationKey] ?: LastFM.DEFAULT_SCROBBLE_MIN_SONG_DURATION,
-                    prefs[ScrobbleDelaySecondsKey] ?: LastFM.DEFAULT_SCROBBLE_DELAY_SECONDS
+                    prefs[ScrobbleDelayPercentKey] ?: 0.5f,
+                    prefs[ScrobbleMinSongDurationKey] ?: 30,
+                    prefs[ScrobbleDelaySecondsKey] ?: 50
                 )
             }
             .distinctUntilChanged()
@@ -1236,7 +1246,7 @@ class MusicService :
                 forceStandardAudioMediaIds.clear()
                 forceAacAudioMediaIds.clear()
                 val mediaId = player.currentMediaItem?.mediaId ?: return@collect
-                if (mediaId.startsWith("content://") || mediaId.startsWith("file://")) return@collect
+                if (mediaId.startsWith("content://") || mediaId.startsWith("file://") || mediaId.startsWith("convx-network://")) return@collect
                 crossfade?.onSkipRequested()
                 val position = player.currentPosition
                 val index = player.currentMediaItemIndex
@@ -3460,7 +3470,7 @@ class MusicService :
             repeat(count - 1) {
                 i = if (i + 1 < count) i + 1 else if (player.repeatMode == Player.REPEAT_MODE_ALL) 0 else return null
                 val id = player.getMediaItemAt(i).mediaId
-                if (id.startsWith("content://") || id.startsWith("file://") || id.startsWith("/storage/")) return i
+                if (id.startsWith("content://") || id.startsWith("file://") || id.startsWith("/storage/") || id.startsWith("convx-network://")) return i
                 if (downloadCache.isCachedToEnd(downloadKey(id), 0) || playerCache.isCachedToEnd(effectiveCacheKey(id), 0)) return i
             }
             return null
@@ -3571,7 +3581,8 @@ class MusicService :
         fun prefetchStreamUrl(mediaId: String) {
             if (mediaId.startsWith("content://") ||
                 mediaId.startsWith("file://") ||
-                mediaId.startsWith("/storage/")
+                mediaId.startsWith("/storage/") ||
+                mediaId.startsWith("convx-network://")
             ) return
             if (bypassCacheForQualityChange.contains(mediaId)) return
             scope.launch(Dispatchers.IO) {
@@ -3605,7 +3616,8 @@ class MusicService :
             val mediaId = uri.getQueryParameter("v") ?: return
             if (mediaId.startsWith("content://") ||
                 mediaId.startsWith("file://") ||
-                mediaId.startsWith("/storage/")
+                mediaId.startsWith("/storage/") ||
+                mediaId.startsWith("convx-network://")
             ) return
             if (playerCache.isCached(mediaId, 0, HEAD_PREFETCH_BYTES)) return
             if (!headPrefetchInFlight.add(mediaId)) return
@@ -3731,7 +3743,8 @@ class MusicService :
                     ResolvingMediaSource(mediaItem) {
                         val mediaId = mediaItem.mediaId
                         if (mediaId.startsWith("content://") || mediaId.startsWith("file://") ||
-                            mediaId.startsWith("/storage/")) return@ResolvingMediaSource progressive.createMediaSource(mediaItem)
+                            mediaId.startsWith("/storage/") ||
+                            mediaId.startsWith(com.convx.storage.domain.NetworkMediaUri.Scheme + "://")) return@ResolvingMediaSource progressive.createMediaSource(mediaItem)
                         val key = effectiveCacheKey(mediaId)
                         if (!bypassCacheForQualityChange.contains(mediaId) &&
                             (downloadCache.isCached(downloadKey(mediaId), 0, 1) || playerCache.isCached(key, 0, CHUNK_LENGTH))) {
@@ -3774,7 +3787,7 @@ class MusicService :
                 ) = DefaultAudioSink
                     .Builder(this@MusicService)
                     // The effects chain consumes PCM16, including decoded hi-res.
-                    .setEnableFloatOutput(false)
+                    .setEnableFloatOutput(true)
                     .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
                     .setAudioProcessorChain(
                         DefaultAudioSink.DefaultAudioProcessorChain(
@@ -4277,34 +4290,7 @@ class MusicService :
             startMs: Long = 0,
             endMs: Long = 0,
             positionMs: Long = 0,
-        ) {
-            val cleanToken = listenBrainzToken.trim()
-            if (!listenBrainzEnabled || cleanToken.isBlank()) return
-            scope.launch {
-                if (isFinished) {
-                    com.convx.music.ui.screens.settings.ListenBrainzManager.submitFinished(
-                        context = this@MusicService,
-                        token = cleanToken,
-                        title = title,
-                        artistNames = artistNames,
-                        releaseName = releaseName,
-                        durationMs = durationMs,
-                        startMs = startMs,
-                        endMs = endMs
-                    )
-                } else {
-                    com.convx.music.ui.screens.settings.ListenBrainzManager.submitPlayingNow(
-                        context = this@MusicService,
-                        token = cleanToken,
-                        title = title,
-                        artistNames = artistNames,
-                        releaseName = releaseName,
-                        durationMs = durationMs,
-                        positionMs = positionMs
-                    )
-                }
-            }
-        }
+        ) {}
 
         fun checkAndSubmitListenBrainzFinished() {
             listenBrainzCurrentMediaId?.let { mediaId ->

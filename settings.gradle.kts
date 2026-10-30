@@ -20,11 +20,8 @@ include(":app")
 include(":canvas")
 include(":innertube")
 include(":lyrics")
-include(":integrations")
-include(":spotify")
 include(":artwork")
 include(":network-storage")
-include(":spine")
 include(":hig")
 
 

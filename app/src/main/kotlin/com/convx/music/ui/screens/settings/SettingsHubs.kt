@@ -48,7 +48,6 @@ sealed interface SettingsAction {
     data class Route(val route: String) : SettingsAction
     data object PlayerDesign : SettingsAction
     data object LyricsStyle : SettingsAction
-    data object AppleMusicImport : SettingsAction
 }
 
 /** One row: a coloured glyph tile, a name, and where it goes. */
@@ -143,9 +142,6 @@ object SettingsHubs {
                 listOf(
                     SettingsLink("Advanced playback", R.drawable.settings, { systemGray }, route("settings/player/advanced"),
                         "Offload, bit-perfect and queue rules", "offload bit perfect duplicates history duration"),
-                    SettingsLink("JioSaavn", R.drawable.music_note, { systemTeal }, route("settings/player/jio"), "Streaming source settings"),
-                    SettingsLink("AI DJ analysis", R.drawable.equalizer, { systemPurple }, route("ai_dj_set"),
-                        "Analyze songs and build a mix", "bpm key mix analysis"),
                 ),
             ),
         ),
@@ -190,17 +186,15 @@ object SettingsHubs {
                 "Content",
                 listOf(
                     SettingsLink("Region & filters", R.drawable.language, { systemBlue }, route("settings/content"),
-                        "Language, country, explicit, Shorts, data saver", "language country explicit shorts data saver video"),
-                    SettingsLink("Artist pages & home", R.drawable.music_note, { systemPink }, route("settings/content/advanced"),
-                        "Artist videos, quick picks, chart length", "artist background video quick picks"),
+                        "Language, country, explicit, data saver", "language country explicit data saver"),
                 ),
             ),
             SettingsLinkGroup(
-                "Local music",
+                "Sources",
                 listOf(
-                    SettingsLink("Music folders", R.drawable.music_note, { systemOrange }, route("settings/player/local_folders"), "Choose folders to scan", "local files"),
-                    SettingsLink("Scan local files", R.drawable.search, { systemGreen }, route("settings/scan_music"), "Find songs on this device"),
-                    SettingsLink("Network storage", R.drawable.storage, { systemGray }, route("settings/network_storage"), "SMB and WebDAV shares", "smb webdav nas"),
+                    SettingsLink("Self-Hosted & Network storage", R.drawable.storage, { systemGreen }, route("settings/network_storage"), "Navidrome, SMB and WebDAV shares", "navidrome subsonic smb webdav nas server"),
+                    SettingsLink("Music folders", R.drawable.music_note, { systemOrange }, route("settings/player/local_folders"), "Choose local folders to scan", "local files"),
+                    SettingsLink("Scan local files", R.drawable.search, { systemBlue }, route("settings/scan_music"), "Find songs on this device"),
                 ),
             ),
             SettingsLinkGroup(
@@ -211,16 +205,14 @@ object SettingsHubs {
     )
 
     val accounts = SettingsHub(
-        "accounts", "Accounts & Services", R.drawable.account, { systemGreen },
+        "accounts", "Sources & Services", R.drawable.storage, { systemGreen },
         listOf(
             SettingsLinkGroup(
-                "Accounts",
+                "Music Sources",
                 listOf(
-                    SettingsLink("YouTube Music", R.drawable.account, { systemRed }, route("settings/account"), "Sign-in, sync and ListenBrainz", "login youtube sync listenbrainz"),
-                    SettingsLink("Spotify", R.drawable.spotify, { systemGreen }, route("settings/spotify"), "Connect and import playlists", "import"),
-                    SettingsLink("Apple Music import", R.drawable.playlist_add, { systemRed }, SettingsAction.AppleMusicImport, "Import playlists from a link or export", "apple music playlist import export"),
-                    SettingsLink("Discord", R.drawable.discord, { systemIndigo }, route("settings/integrations/discord"), "Listening status", "rich presence"),
-                    SettingsLink("Last.fm", R.drawable.music_note, { systemRed }, route("settings/integrations/lastfm"), "Scrobbling", "scrobble"),
+                    SettingsLink("Navidrome Server", R.drawable.storage, { systemGreen }, route("settings/network_storage"), "Connect Navidrome & Subsonic sources", "navidrome subsonic server lossless"),
+                    SettingsLink("Music folders", R.drawable.music_note, { systemOrange }, route("settings/player/local_folders"), "Choose local folders to scan", "local files folder"),
+                    SettingsLink("Scan local files", R.drawable.search, { systemBlue }, route("settings/scan_music"), "Find songs on this device", "scan local"),
                 ),
             ),
             SettingsLinkGroup(
@@ -276,7 +268,7 @@ object SettingsSheets {
 fun rememberSettingsActionHandler(navController: NavController): (SettingsAction) -> Unit = { action ->
     when (action) {
         is SettingsAction.Route -> navController.navigate(action.route)
-        SettingsAction.PlayerDesign, SettingsAction.LyricsStyle, SettingsAction.AppleMusicImport -> SettingsSheets.open = action
+        SettingsAction.PlayerDesign, SettingsAction.LyricsStyle -> SettingsSheets.open = action
     }
 }
 
@@ -292,10 +284,6 @@ fun SettingsSheetHost(navController: NavController) {
             })
         }
         SettingsAction.LyricsStyle -> IosPageSheet("Lyrics style", close) { LyricsAnimationSheetContent() }
-        SettingsAction.AppleMusicImport -> AppleMusicImportDialogHost(
-            navController = navController,
-            onCloseSheet = { SettingsSheets.open = null },
-        )
         else -> Unit
     }
 }

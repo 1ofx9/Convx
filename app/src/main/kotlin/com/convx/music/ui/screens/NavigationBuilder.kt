@@ -51,7 +51,6 @@ import com.convx.music.ui.screens.artist.ArtistItemsScreen
 import com.convx.music.ui.screens.artist.ArtistScreen
 import com.convx.music.ui.screens.artist.ArtistSongsScreen
 import com.convx.music.ui.screens.equalizer.EqScreen
-import com.convx.music.ui.screens.library.AiDjSetScreen
 import com.convx.music.ui.screens.library.LocalFolderScreen
 import com.convx.music.ui.screens.library.LocalMusicScreen
 import com.convx.music.ui.screens.library.LibraryScreen
@@ -76,11 +75,8 @@ import com.convx.music.ui.screens.settings.GlassEffectSettings
 import com.convx.music.ui.screens.settings.PlayerThemeScreen
 import com.convx.music.ui.screens.settings.BackupAndRestore
 import com.convx.music.ui.screens.settings.CrashLogsSettingsScreen
-import com.convx.music.ui.screens.settings.SpotifyScreen
-import com.convx.music.viewmodels.SpotifyImportViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.convx.music.ui.screens.settings.ContentSettings
-import com.convx.music.ui.screens.settings.DiscordLoginScreen
 import com.convx.music.ui.screens.settings.PlayerSettings
 import com.convx.music.ui.screens.settings.PlayerAdvancedSettings
 import com.convx.music.ui.screens.settings.AppearanceAdvancedSettings
@@ -95,15 +91,7 @@ import com.convx.music.ui.screens.settings.AccountSettingsScreen
 import com.convx.music.ui.screens.settings.StorageSettings
 import com.convx.music.ui.screens.settings.ThemeScreen
 import com.convx.music.ui.screens.settings.AiSettings
-import com.convx.music.ui.screens.settings.integrations.DiscordSettings
-import com.convx.music.ui.screens.settings.integrations.IntegrationScreen
-import com.convx.music.ui.screens.settings.integrations.LastFMSettings
-import com.convx.music.ui.screens.settings.integrations.ListenTogetherSettings
 import com.convx.music.ui.screens.ambient.AmbientModeScreen
-import com.convx.music.ui.screens.recognition.RecognitionScreen
-import com.convx.music.ui.screens.recognition.RecognitionHistoryScreen
-import com.convx.music.ui.screens.settings.ModuleSourceScreen
-import com.convx.music.ui.screens.settings.ModuleDetailScreen
 import com.convx.music.ui.screens.settings.UpdateSettings
 import com.convx.music.ui.screens.wrapped.WrappedScreen
 import com.convx.music.core.updater.UpdateScreen
@@ -615,68 +603,9 @@ fun NavGraphBuilder.navigationBuilder(
         CrashLogsSettingsScreen(navController)
     }
 
-    sharedComposable("settings/spotify") {
-        SpotifyScreen(navController, scrollBehavior)
-    }
 
-    sharedComposable(
-        route = "ai_dj_set?seedSongId={seedSongId}&concert={concert}",
-        arguments = listOf(
-            navArgument("seedSongId") {
-                type = NavType.StringType
-                nullable = true
-                defaultValue = null
-            },
-            navArgument("concert") {
-                type = NavType.BoolType
-                defaultValue = false
-            },
-        ),
-    ) {
-        AiDjSetScreen(
-            navController,
-            scrollBehavior,
-            it.arguments?.getString("seedSongId"),
-            it.arguments?.getBoolean("concert") ?: false,
-        )
-    }
+    
 
-
-
-    sharedComposable("settings/integrations") {
-        IntegrationScreen(navController, scrollBehavior)
-    }
-
-    sharedComposable("settings/modules") {
-        ModuleSourceScreen(navController, scrollBehavior)
-    }
-
-    sharedComposable(
-        route = "settings/modules/{moduleId}",
-        arguments = listOf(
-            navArgument("moduleId") {
-                type = NavType.StringType
-            },
-        ),
-    ) {
-        ModuleDetailScreen(navController, scrollBehavior, it.arguments?.getString("moduleId") ?: "")
-    }
-
-    sharedComposable("settings/integrations/discord") {
-        DiscordSettings(navController, scrollBehavior, snackbarHostState)
-    }
-
-    sharedComposable("settings/integrations/lastfm") {
-        LastFMSettings(navController, scrollBehavior)
-    }
-
-    sharedComposable(route = "settings/integrations/listen_together") {
-        ListenTogetherSettings(navController, scrollBehavior)
-    }
-
-    sharedComposable("settings/discord/login") {
-        DiscordLoginScreen(navController)
-    }
 
     sharedComposable("settings/about") {
         AboutScreen(navController, scrollBehavior)
@@ -710,13 +639,6 @@ fun NavGraphBuilder.navigationBuilder(
         EqScreen(navController = navController)
     }
 
-    sharedComposable("recognition") {
-        RecognitionScreen(navController)
-    }
-
-    sharedComposable("recognition_history") {
-        RecognitionHistoryScreen(navController)
-    }
     sharedComposable("settings/changelog") {
         ChangelogScreen(navController,scrollBehavior)
     }

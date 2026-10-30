@@ -799,13 +799,7 @@ internal fun AppRootContent(
                     }
                 }
 
-                val onSearchLongClick: () -> Unit = remember(navController) {
-                    {
-                        navController.navigate("recognition") {
-                            launchSingleTop = true
-                        }
-                    }
-                }
+                val onSearchLongClick: () -> Unit = remember { {} }
 
                 val navBarTotalHeight = bottomInset + NavigationBarHeight
 
@@ -874,13 +868,7 @@ internal fun AppRootContent(
                             Modifier.align(Alignment.TopCenter).zIndex(10f),
                         )
 
-                        val onRailSearchLongClick: () -> Unit = remember(navController) {
-                            {
-                                navController.navigate("recognition") {
-                                    launchSingleTop = true
-                                }
-                            }
-                        }
+                        val onRailSearchLongClick: () -> Unit = remember { {} }
 
                         Box(Modifier.fillMaxSize()) {
                             // Keep shared backdrop capture and transitions around navigation content.

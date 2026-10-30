@@ -33,7 +33,6 @@ import com.music.innertube.YouTube
 import com.music.innertube.models.IpVersion
 import com.music.innertube.models.YouTubeLocale
 import com.music.kugou.KuGou
-import com.music.lastfm.LastFM
 import com.convx.music.constants.*
 import com.convx.music.di.ApplicationScope
 import com.convx.music.extensions.toEnum
@@ -75,7 +74,6 @@ class App : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
-        com.music.spotify.SpotifyAuth.initialize(this)
         // The recovery activity runs in its own process. Do not reopen the database,
         // preferences, native caches or playback integrations that may have crashed.
         val processName = if (Build.VERSION.SDK_INT >= 28) {
@@ -88,7 +86,6 @@ class App : Application(), SingletonImageLoader.Factory {
         com.convx.music.canvas.AppleMusicCatalog.cacheDir = filesDir.resolve("apple_catalog")
         com.convx.music.core.UpdateNotificationHelper.cancelUpdateNotification(this)
         // Eclipse addons identify clients by UA; they require "Convx/<app-version>".
-        com.music.spine.ModuleManager.userAgent = "Convx/${BuildConfig.VERSION_NAME}"
 
         // StrictMode: debug-only, catches main-thread IO before it ships.
         // Release untouched — zero behavior change there.
@@ -130,13 +127,6 @@ class App : Application(), SingletonImageLoader.Factory {
 
         // Warm the preference mirror off Main so the first composition avoids its blocking read.
         applicationScope.launch(Dispatchers.IO) { dataStore.warmPreferenceMirror() }
-        // Spotify's native engine: report whether it loaded, without ever failing startup over it.
-        applicationScope.launch(Dispatchers.IO) {
-            val loaded = runCatching { com.music.spotify.nativecore.NativeBridge.initContext(this@App) }
-            timber.log.Timber.tag("SpotifyEngine").i(
-                if (loaded.isSuccess) "native engine loaded" else "native engine unavailable: ${loaded.exceptionOrNull()}",
-            )
-        }
 
         CrashHandler.install(this)
 
@@ -198,10 +188,6 @@ class App : Application(), SingletonImageLoader.Factory {
             KuGou.useTraditionalChinese = true
         }
 
-        LastFM.initialize(
-            apiKey = BuildConfig.LASTFM_API_KEY.takeIf { it.isNotEmpty() } ?: "",
-            secret = BuildConfig.LASTFM_SECRET.takeIf { it.isNotEmpty() } ?: ""
-        )
 
         if (settings[ProxyEnabledKey] == true) {
             val username = settings[ProxyUsernameKey].orEmpty()
@@ -289,18 +275,7 @@ class App : Application(), SingletonImageLoader.Factory {
                 }
         }
 
-        applicationScope.launch(Dispatchers.IO) {
-            dataStore.data
-                .map { it[LastFMSessionKey] }
-                .distinctUntilChanged()
-                .collect { session ->
-                    try {
-                        LastFM.sessionKey = session
-                    } catch (e: Exception) {
-                        Timber.e("Error while loading last.fm session key. %s", e.message)
-                    }
-                }
-        }
+
 
         applicationScope.launch(Dispatchers.IO) {
             dataStore.data
