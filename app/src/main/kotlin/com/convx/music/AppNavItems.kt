@@ -8,13 +8,11 @@ package com.convx.music
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
-import com.convx.music.constants.ListenTogetherInTopBarKey
-import com.convx.music.constants.LocalOnlyModeKey
 import com.convx.music.constants.HiddenNavigationRoutesKey
 import com.convx.music.ui.screens.Screens
 import com.convx.music.utils.rememberPreference
 
-/** Whether the app runs on self-hosted and device files only. Provided once at the root; screens read this instead of the preference. */
+/** Whether the app runs on self-hosted and device files only. Always true for pure self-hosted streaming. */
 val LocalLocalOnlyMode = androidx.compose.runtime.staticCompositionLocalOf { true }
 
 /** Destinations shown by the app's navigation bars. */
@@ -28,22 +26,25 @@ class AppNavItems(
 
 @Composable
 fun rememberAppNavItems(): AppNavItems {
-    val (listenTogetherInTopBar) = rememberPreference(ListenTogetherInTopBarKey, defaultValue = false)
-    // Read once here because both navigation bars use this preference. Defaults to true for Navidrome/Local.
-    val (localOnlyMode) = rememberPreference(LocalOnlyModeKey, true)
     val (hiddenNavigationRoutes) = rememberPreference(HiddenNavigationRoutesKey, "")
     val hiddenRoutes = remember(hiddenNavigationRoutes) {
         hiddenNavigationRoutes.lineSequence().map(String::trim).filter(String::isNotEmpty).toSet()
     }
-    val navigationItems = remember(listenTogetherInTopBar, localOnlyMode, hiddenRoutes) {
-        val screens = Screens.mainScreens(localOnlyMode)
+    val localOnlyMode = true
+    val navigationItems = remember(hiddenRoutes) {
+        val screens = Screens.mainScreens(true)
         val visible = screens.filter { it != Screens.ListenTogether && it != Screens.Radio && it != Screens.Explore }
         visible.filter { it == Screens.Search || it.route !in hiddenRoutes }
     }
-    val floatingNavigationItems = remember(navigationItems, localOnlyMode, hiddenRoutes) {
+    val floatingNavigationItems = remember(navigationItems) {
         navigationItems
     }
-    return remember(listenTogetherInTopBar, localOnlyMode, navigationItems, floatingNavigationItems) {
-        AppNavItems(listenTogetherInTopBar, localOnlyMode, navigationItems, floatingNavigationItems)
+    return remember(navigationItems, floatingNavigationItems) {
+        AppNavItems(
+            listenTogetherInTopBar = false,
+            localOnlyMode = localOnlyMode,
+            navigationItems = navigationItems,
+            floatingNavigationItems = floatingNavigationItems,
+        )
     }
 }

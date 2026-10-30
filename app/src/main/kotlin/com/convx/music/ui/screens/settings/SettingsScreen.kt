@@ -251,36 +251,46 @@ private fun SearchResults(entries: List<SearchEntry>, query: String, onAction: (
     )
 }
 
-/** Local only mode: a root-level switch, so it is one tap from the top of Settings. */
+/** Active self-hosted playback indicator. */
 @Composable
 private fun LocalOnlyRow() {
-    val (localOnly, setLocalOnly) = rememberPreference(LocalOnlyModeKey, defaultValue = true)
     Row(
         Modifier
             .fillMaxWidth()
             .clip(ContinuousRoundedRectangle(IosMetrics.GroupedCornerRadius))
             .background(IosTheme.colors.secondarySystemGroupedBackground)
-            .clickable { setLocalOnly(!localOnly) }
             .defaultMinSize(minHeight = 56.dp)
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            Modifier.size(30.dp).clip(ContinuousRoundedRectangle(7.dp)).background(IosTheme.colors.systemOrange),
+            Modifier.size(30.dp).clip(ContinuousRoundedRectangle(7.dp)).background(IosTheme.colors.systemGreen),
             contentAlignment = Alignment.Center,
         ) {
             Icon(painterResource(R.drawable.music_note), null, tint = Color.White, modifier = Modifier.size(18.dp))
         }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
-            Text(stringResource(R.string.local_only_mode), style = IosTheme.typography.body, color = IosTheme.colors.label)
+            Text("Lossless Self-Hosted Engine", style = IosTheme.typography.body, color = IosTheme.colors.label)
             Text(
-                "Play exclusively from Navidrome and local files in lossless quality",
+                "Streaming bit-perfect audio from Navidrome & local storage",
                 style = IosTheme.typography.footnote,
                 color = IosTheme.colors.secondaryLabel,
             )
         }
-        Switch(checked = localOnly, onCheckedChange = setLocalOnly)
+        Box(
+            Modifier
+                .clip(ContinuousCapsule())
+                .background(IosTheme.colors.systemGreen.copy(alpha = 0.15f))
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+        ) {
+            Text(
+                "ACTIVE",
+                style = IosTheme.typography.caption2,
+                fontWeight = FontWeight.Bold,
+                color = IosTheme.colors.systemGreen,
+            )
+        }
     }
 }
 
@@ -311,14 +321,14 @@ private fun ProfileCard(onClick: () -> Unit) {
         }
         Column(Modifier.weight(1f).padding(start = 16.dp)) {
             Text(
-                "Self-Hosted & Local Music",
+                "Navidrome & Network Storage",
                 style = IosTheme.typography.title3,
                 fontWeight = FontWeight.SemiBold,
                 color = IosTheme.colors.label,
                 maxLines = 1,
             )
             Text(
-                "Navidrome and local storage",
+                "Configure servers, sync playlists & scan library",
                 style = IosTheme.typography.footnote,
                 color = IosTheme.colors.secondaryLabel,
                 maxLines = 1,

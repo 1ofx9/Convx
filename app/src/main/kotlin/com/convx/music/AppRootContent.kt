@@ -634,13 +634,10 @@ internal fun AppRootContent(
                 com.convx.music.constants.ChipSortTypeKey,
                 com.convx.music.constants.LibraryFilter.LIBRARY,
             )
-            LaunchedEffect(effectiveRoute, listenTogetherInTopBar, showRail, libraryFilter) {
-                val isListenTogetherScreen = effectiveRoute == Screens.ListenTogether.route ||
-                    currentRoute == "listen_together_from_topbar"
+            LaunchedEffect(effectiveRoute, showRail, libraryFilter) {
                 shouldShowTopBar = effectiveRoute in topLevelScreens &&
                     effectiveRoute != "settings" &&
-                    !(effectiveRoute == Screens.Library.route && libraryFilter != com.convx.music.constants.LibraryFilter.LIBRARY) &&
-                    !(isListenTogetherScreen && listenTogetherInTopBar)
+                    !(effectiveRoute == Screens.Library.route && libraryFilter != com.convx.music.constants.LibraryFilter.LIBRARY)
             }
 
             val coroutineScope = rememberCoroutineScope()

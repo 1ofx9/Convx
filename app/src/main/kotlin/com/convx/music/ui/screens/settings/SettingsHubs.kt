@@ -197,10 +197,7 @@ object SettingsHubs {
                     SettingsLink("Scan local files", R.drawable.search, { systemBlue }, route("settings/scan_music"), "Find songs on this device"),
                 ),
             ),
-            SettingsLinkGroup(
-                null,
-                listOf(SettingsLink("Modules", R.drawable.link, { systemBlue }, route("settings/modules"), "Music sources and add-ons", "plugins extensions")),
-            ),
+
         ),
     )
 

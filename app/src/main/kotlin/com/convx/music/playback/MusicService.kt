@@ -3479,6 +3479,17 @@ class MusicService :
         /** Resolves a playback URL and updates format, cache, and database state. */
         private suspend fun fetchResolvedStream(mediaId: String, effKey: String): ResolvedStream {
             Timber.tag("MusicService").i("FETCHING STREAM: $mediaId | quality=$audioQuality")
+            if (!mediaId.startsWith("convx-network://") &&
+                !mediaId.startsWith("content://") &&
+                !mediaId.startsWith("file://") &&
+                !mediaId.startsWith("/storage/")
+            ) {
+                throw PlaybackException(
+                    "Only self-hosted Navidrome and local storage playback is supported.",
+                    null,
+                    PlaybackException.ERROR_CODE_IO_UNSPECIFIED,
+                )
+            }
             // Fail immediately offline; stream resolution requires a network connection.
             if (connectivityManager.activeNetwork == null) {
                 throw PlaybackException(

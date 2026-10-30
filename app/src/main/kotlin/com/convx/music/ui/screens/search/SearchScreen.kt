@@ -237,34 +237,13 @@ fun SearchScreen(
             )
             val focusedTop = if (tabletLayout) statusTop + 10.dp else maxOf(statusTop, 58.dp)
             Column(Modifier.fillMaxSize().padding(top = focusedTop)) {
-                if (navSearch.canToggleSource) {
-                    SourceSwitch(
-                        source = navSearch.searchSource,
-                        onSelect = { if (it != navSearch.searchSource) navSearch.onToggleSource() },
-                        backdrop = searchBackdrop,
-                        modifier = Modifier.padding(start = sideInset + 16.dp, end = 16.dp),
+                Box(Modifier.weight(1f).layerBackdrop(searchBackdrop)) {
+                    LocalSearchScreen(
+                        query = navSearch.query.text,
+                        navController = navController,
+                        onDismiss = { },
+                        pureBlack = pureBlack
                     )
-                }
-                Box(Modifier.weight(1f)
-                    .layerBackdrop(searchBackdrop)) {
-                    when (navSearch.searchSource) {
-                        SearchSource.LOCAL -> LocalSearchScreen(
-                            query = navSearch.query.text,
-                            navController = navController,
-                            onDismiss = { },
-                            pureBlack = pureBlack
-                        )
-                        SearchSource.ONLINE -> OnlineSearchScreen(
-                            query = navSearch.query.text,
-                            onQueryChange = navSearch.onQueryChange,
-                            navController = navController,
-                            onSearch = { onSearchFromSuggestion(it) },
-                            onDismiss = { },
-                            pureBlack = pureBlack,
-                            contentColor = colors.label,
-                            referenceHistory = true,
-                        )
-                    }
                 }
             }
         }

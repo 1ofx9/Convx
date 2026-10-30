@@ -51,6 +51,7 @@ class NavidromeFileSource(
 
     suspend fun scan(server: NetworkServer, maxTracks: Int = 10_000): NetworkLibrary = withContext(Dispatchers.IO) {
         val tracks = mutableListOf<NetworkTrack>()
+        val existingTrackIds = mutableSetOf<String>()
         var offset = 0
         val pageSize = 500
         var truncated = false
@@ -102,6 +103,9 @@ class NavidromeFileSource(
                         val songObj = songArray.optJSONObject(s) ?: continue
                         val songId = songObj.optString("id")
                         if (songId.isEmpty()) continue
+                        val trackUri = NetworkMediaUri.create(server.id, songId)
+                        if (!existingTrackIds.add(trackUri)) continue
+
                         val title = songObj.optString("title", "Unknown Title")
                         val songArtist = songObj.optString("artist").takeIf { it.isNotBlank() } ?: artistName
                         val songAlbum = songObj.optString("album").takeIf { it.isNotBlank() } ?: albumName
@@ -117,7 +121,7 @@ class NavidromeFileSource(
 
                         tracks.add(
                             NetworkTrack(
-                                id = NetworkMediaUri.create(server.id, songId),
+                                id = trackUri,
                                 title = title,
                                 artist = songArtist,
                                 album = songAlbum,
@@ -138,7 +142,108 @@ class NavidromeFileSource(
             if (albumIds.size < pageSize) break
         }
 
-        NetworkLibrary(tracks, truncated)
+        // Fetch user playlists and index any missing playlist tracks
+        val playlists = fetchPlaylists(server, tracks, existingTrackIds)
+
+        NetworkLibrary(tracks = tracks, truncated = truncated, playlists = playlists)
+    }
+
+    private suspend fun fetchPlaylists(
+        server: NetworkServer,
+        tracks: MutableList<NetworkTrack>,
+        existingTrackIds: MutableSet<String>,
+    ): List<NetworkPlaylist> = withContext(Dispatchers.IO) {
+        val result = mutableListOf<NetworkPlaylist>()
+        try {
+            val url = "${server.address}rest/getPlaylists.view?${authQuery(server)}".toHttpUrl()
+            val request = Request.Builder().url(url).build()
+            val playlistSummaries = client.newCall(request).await().use { response ->
+                if (!response.isSuccessful) return@use emptyList<Triple<String, String, String?>>()
+                val json = JSONObject(response.body?.string() ?: "{}")
+                val subResponse = json.optJSONObject("subsonic-response") ?: return@use emptyList()
+                val playlistArray = subResponse.optJSONObject("playlists")?.optJSONArray("playlist") ?: return@use emptyList()
+                val list = mutableListOf<Triple<String, String, String?>>()
+                for (i in 0 until playlistArray.length()) {
+                    val p = playlistArray.optJSONObject(i) ?: continue
+                    val id = p.optString("id")
+                    val name = p.optString("name")
+                    val cover = p.optString("coverArt").takeIf { it.isNotBlank() }
+                    if (id.isNotEmpty() && name.isNotEmpty()) {
+                        list.add(Triple(id, name, cover))
+                    }
+                }
+                list
+            }
+
+            for ((plId, plName, plCover) in playlistSummaries) {
+                try {
+                    val detailUrl = "${server.address}rest/getPlaylist.view?id=$plId&${authQuery(server)}".toHttpUrl()
+                    val detailReq = Request.Builder().url(detailUrl).build()
+                    val trackIds = client.newCall(detailReq).await().use { resp ->
+                        if (!resp.isSuccessful) return@use emptyList<String>()
+                        val json = JSONObject(resp.body?.string() ?: "{}")
+                        val sub = json.optJSONObject("subsonic-response") ?: return@use emptyList()
+                        val plObj = sub.optJSONObject("playlist") ?: return@use emptyList()
+                        val entryArr = plObj.optJSONArray("entry") ?: return@use emptyList()
+                        val ids = mutableListOf<String>()
+
+                        for (j in 0 until entryArr.length()) {
+                            val entry = entryArr.optJSONObject(j) ?: continue
+                            val songId = entry.optString("id")
+                            if (songId.isEmpty()) continue
+                            val trackUri = NetworkMediaUri.create(server.id, songId)
+                            ids.add(trackUri)
+
+                            // If this track was not part of the album scan, add it to tracks now
+                            if (existingTrackIds.add(trackUri)) {
+                                val title = entry.optString("title", "Unknown Title")
+                                val artist = entry.optString("artist").takeIf { it.isNotBlank() }
+                                val album = entry.optString("album").takeIf { it.isNotBlank() }
+                                val cover = entry.optString("coverArt").takeIf { it.isNotBlank() }
+                                val duration = entry.optInt("duration", -1)
+                                val trackNum = entry.optInt("track", -1).takeIf { it > 0 }
+                                val year = entry.optInt("year", -1).takeIf { it > 0 }
+                                val size = entry.optLong("size", -1L)
+                                val artworkUrl = cover?.let {
+                                    "${server.address}rest/getCoverArt.view?id=$it&size=800&${authQuery(server)}"
+                                }
+
+                                tracks.add(
+                                    NetworkTrack(
+                                        id = trackUri,
+                                        title = title,
+                                        artist = artist,
+                                        album = album,
+                                        artwork = artworkUrl,
+                                        size = size,
+                                        duration = duration,
+                                        year = year,
+                                        trackNumber = trackNum,
+                                        albumId = album?.let { "navidrome_album_${server.id}_${it.hashCode()}" },
+                                        artistId = artist?.let { "navidrome_artist_${server.id}_${it.hashCode()}" },
+                                    ),
+                                )
+                            }
+                        }
+                        ids
+                    }
+
+                    val artworkUrl = plCover?.let {
+                        "${server.address}rest/getCoverArt.view?id=$it&size=800&${authQuery(server)}"
+                    }
+
+                    result.add(
+                        NetworkPlaylist(
+                            id = "navidrome_pl_${server.id}_$plId",
+                            name = plName,
+                            thumbnailUrl = artworkUrl,
+                            trackIds = trackIds,
+                        ),
+                    )
+                } catch (_: Exception) {}
+            }
+        } catch (_: Exception) {}
+        result
     }
 
     fun resolveStreamUrl(server: NetworkServer, songId: String): String {

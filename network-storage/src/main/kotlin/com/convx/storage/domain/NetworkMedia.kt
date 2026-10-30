@@ -38,7 +38,18 @@ object NetworkMediaUri {
 
 data class NetworkEntry(val path: String, val name: String, val directory: Boolean, val size: Long = -1)
 
-data class NetworkLibrary(val tracks: List<NetworkTrack>, val truncated: Boolean = false)
+data class NetworkPlaylist(
+    val id: String,
+    val name: String,
+    val thumbnailUrl: String? = null,
+    val trackIds: List<String> = emptyList(),
+)
+
+data class NetworkLibrary(
+    val tracks: List<NetworkTrack>,
+    val truncated: Boolean = false,
+    val playlists: List<NetworkPlaylist> = emptyList(),
+)
 
 data class NetworkTrack(
     val id: String,
@@ -60,29 +71,15 @@ object NetworkMedia {
     fun isAudio(name: String): Boolean = name.substringAfterLast('.', "").lowercase(Locale.ROOT) in audioExtensions
     fun isImage(name: String): Boolean = name.substringAfterLast('.', "").lowercase(Locale.ROOT) in imageExtensions
 
-    fun track(serverId: String, entry: NetworkEntry, images: List<NetworkEntry>): NetworkTrack {
-        val stem = entry.name.substringBeforeLast('.').trim()
-        val parts = stem.split(" - ", limit = 2)
-        val artist = parts.first().trim().takeIf { parts.size == 2 && it.isNotBlank() && it.toIntOrNull() == null }
-        val title = if (parts.size == 2) parts[1].trim().ifBlank { stem } else stem
-        val parent = RemotePath.parent(entry.path)
-        val artwork = images.filter { RemotePath.parent(it.path) == parent }.minByOrNull {
-            when (it.name.substringBeforeLast('.').lowercase(Locale.ROOT)) {
-                stem.lowercase(Locale.ROOT) -> 0
-                "cover" -> 1
-                "folder" -> 2
-                "front" -> 3
-                "albumart" -> 4
-                else -> 5
-            }
-        }?.let { NetworkMediaUri.create(serverId, it.path) }
+    fun track(serverId: String, file: NetworkEntry, siblings: List<NetworkEntry>): NetworkTrack {
+        val artwork = siblings.firstOrNull { isImage(it.name) }?.let { NetworkMediaUri.create(serverId, it.path) }
         return NetworkTrack(
-            id = NetworkMediaUri.create(serverId, entry.path),
-            title = title,
-            artist = artist,
-            album = parent.substringAfterLast('/').takeIf(String::isNotBlank),
+            id = NetworkMediaUri.create(serverId, file.path),
+            title = RemotePath.name(file.path).substringBeforeLast('.'),
+            artist = null,
+            album = RemotePath.parent(file.path).substringAfterLast('/').takeIf { it.isNotBlank() },
             artwork = artwork,
-            size = entry.size,
+            size = file.size,
         )
     }
 }

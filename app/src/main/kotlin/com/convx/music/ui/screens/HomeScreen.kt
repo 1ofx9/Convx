@@ -281,11 +281,7 @@ sealed class HomeSection(val id: String, val baseWeight: Int) {
 /** Picks the Home for the current mode before either view model exists, so local mode never builds the online feed. */
 @Composable
 fun HomeRoute(navController: NavController, snackbarHostState: SnackbarHostState) {
-    if (com.convx.music.LocalLocalOnlyMode.current) {
-        LocalHomeScreen(navController)
-    } else {
-        HomeScreen(navController, snackbarHostState)
-    }
+    LocalHomeScreen(navController)
 }
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)

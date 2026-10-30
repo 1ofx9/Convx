@@ -81,7 +81,6 @@ import com.convx.music.ui.screens.settings.PlayerSettings
 import com.convx.music.ui.screens.settings.PlayerAdvancedSettings
 import com.convx.music.ui.screens.settings.AppearanceAdvancedSettings
 import com.convx.music.ui.screens.settings.ContentAdvancedSettings
-import com.convx.music.ui.screens.settings.JioSettings
 import com.convx.music.ui.screens.settings.LocalFoldersSettingsScreen
 import com.convx.music.ui.screens.settings.ScanMusicScreen
 import com.convx.music.ui.screens.settings.SongTransitionsScreen
@@ -173,15 +172,7 @@ fun NavGraphBuilder.navigationBuilder(
         SettingsScreen(navController, scrollBehavior)
     }
 
-    sharedComposable(
-        route = "listen_together_from_topbar",
-    ) {
-        com.convx.music.ui.screens.JamScreen(navController)
-    }
 
-    sharedComposable("listen_together/chat") {
-        CommentTogetherScreen(navController)
-    }
 
     sharedComposable("history") {
         HistoryScreen(navController)
@@ -546,9 +537,7 @@ fun NavGraphBuilder.navigationBuilder(
         PlayerAdvancedSettings(navController, scrollBehavior)
     }
 
-    sharedComposable("settings/player/jio") {
-        JioSettings(navController, scrollBehavior)
-    }
+
 
     sharedComposable("settings/scan_music") {
         ScanMusicScreen(navController, scrollBehavior)
@@ -562,9 +551,7 @@ fun NavGraphBuilder.navigationBuilder(
         LocalFoldersSettingsScreen(navController, scrollBehavior)
     }
 
-    sharedComposable("listen_together/party") {
-        com.convx.music.ui.screens.JamScreen(navController)
-    }
+
 
     sharedComposable(
         route = "network_browse/{serverId}",

@@ -9,6 +9,8 @@ import androidx.room.withTransaction
 import com.convx.music.db.MusicDatabase
 import com.convx.music.db.entities.AlbumEntity
 import com.convx.music.db.entities.ArtistEntity
+import com.convx.music.db.entities.PlaylistEntity
+import com.convx.music.db.entities.PlaylistSongMap
 import com.convx.music.db.entities.SongAlbumMap
 import com.convx.music.db.entities.SongArtistMap
 import com.convx.music.db.entities.SongEntity
@@ -36,6 +38,32 @@ object NetworkLibraryImporter {
         var skipped = 0
         library.tracks.forEach { track ->
             if (insert(database, track)) added++ else skipped++
+        }
+        library.playlists.forEach { pl ->
+            try {
+                database.withTransaction {
+                    val entity = PlaylistEntity(
+                        id = pl.id,
+                        name = pl.name,
+                        thumbnailUrl = pl.thumbnailUrl,
+                        isLocal = true,
+                    )
+                    insert(entity)
+                    update(entity)
+                    clearPlaylist(pl.id)
+                    pl.trackIds.forEachIndexed { index, trackId ->
+                        insert(
+                            PlaylistSongMap(
+                                playlistId = pl.id,
+                                songId = trackId,
+                                position = index,
+                            ),
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.tag("NetworkImport").w(e, "Failed to import playlist ${pl.name}")
+            }
         }
         return Result(added, skipped, library.truncated)
     }
