@@ -558,19 +558,7 @@ fun OldPlayerMenu(
                         )
                     )
 
-                    add(
-                        IosMenuItemData(
-                            title = { Text(text = stringResource(R.string.equalizer)) },
-                            description = { Text(text = stringResource(R.string.equalizer_desc)) },
-                            icon = {
-                                SymbolIcon(symbol = sf("slider.vertical.3"), contentDescription = null, size = 24.dp)
-                            },
-                            onClick = {
-                                navController.navigate("settings/equalizer")
-                                onDismiss()
-                            }
-                        )
-                    )
+
 
                     add(
                         IosMenuItemData(

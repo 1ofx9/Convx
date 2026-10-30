@@ -189,6 +189,7 @@ abstract class InternalDatabase : RoomDatabase() {
                                 db.query("PRAGMA cache_size = -16000").close()
                                 db.query("PRAGMA wal_autocheckpoint = 1000").close()
                                 db.query("PRAGMA synchronous = NORMAL").close()
+                                db.execSQL("UPDATE playlist SET bookmarkedAt = COALESCE(bookmarkedAt, lastUpdateTime, datetime('now')) WHERE isLocal = 1 AND bookmarkedAt IS NULL")
                             } catch (e: Exception) {
                                 Timber.tag("MusicDatabase").e(e, "Failed to set PRAGMA settings")
                             }

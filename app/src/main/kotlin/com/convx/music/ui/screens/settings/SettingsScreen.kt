@@ -66,8 +66,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.convx.music.LocalPlayerAwareWindowInsets
 import com.convx.music.R
-import com.convx.music.core.updater.getAutoUpdateCheckSetting
-import com.convx.music.core.updater.getUpdateAvailableState
 import com.convx.music.ui.component.SymbolIcon
 import com.convx.music.ui.component.sf
 import com.convx.music.ui.component.shapes.ContinuousCapsule
@@ -88,14 +86,12 @@ import com.convx.music.viewmodels.HomeViewModel
 /** Root rows that open a page directly rather than a category. */
 private val historyLink = SettingsLink("History", R.drawable.music_history, { systemCyan }, SettingsAction.Route("history"))
 private val statsLink = SettingsLink("Stats", R.drawable.stats, { systemYellow }, SettingsAction.Route("stats"))
-private val updateLink = SettingsLink("Software Update", R.drawable.network_update, { systemGray }, SettingsAction.Route("settings/update"))
 
-/** The root, grouped the way the categories are read: what you hear, what you see, your stuff, help. */
+/** The root, grouped the way the categories are read: what you hear, what you see, your stuff. */
 private val rootGroups = listOf(
     listOf(SettingsHubs.player.asLink(), SettingsHubs.playback.asLink(), SettingsHubs.appearance.asLink()),
-    listOf(SettingsHubs.library.asLink(), SettingsHubs.accounts.asLink()),
+    listOf(SettingsHubs.library.asLink()),
     listOf(SettingsHubs.privacy.asLink(), historyLink, statsLink),
-    listOf(updateLink, SettingsHubs.help.asLink()),
 )
 
 /** Wider than this, the root becomes a sidebar with the chosen category beside it. */
@@ -108,7 +104,6 @@ fun SettingsScreen(
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
     val context = LocalContext.current
-    val updateAvailable = getUpdateAvailableState(context) && getAutoUpdateCheckSetting(context)
     val onAction = rememberSettingsActionHandler(navController)
 
     var query by rememberSaveable { mutableStateOf("") }
@@ -117,7 +112,7 @@ fun SettingsScreen(
 
     BoxWithConstraints(Modifier.fillMaxSize().background(IosTheme.colors.systemGroupedBackground)) {
         val split = maxWidth >= SplitWidth
-        val trailing: (SettingsLink) -> String? = { if (it == updateLink && updateAvailable) "1" else null }
+        val trailing: (SettingsLink) -> String? = { null }
 
         val rootList: @Composable (Boolean) -> Unit = { sidebar ->
             SettingsLazyPage(

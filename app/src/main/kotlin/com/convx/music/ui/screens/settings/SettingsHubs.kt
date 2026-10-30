@@ -108,8 +108,6 @@ object SettingsHubs {
                         "Choose and order lyric providers", "provider youlyplus paxsenix lrclib"),
                     SettingsLink("Romanization", R.drawable.translate, { systemTeal }, route("settings/content/romanization"),
                         "Show lyrics in Latin letters", "japanese korean chinese cyrillic"),
-                    SettingsLink("AI translation", R.drawable.translate, { systemPurple }, route("settings/ai"),
-                        "Provider, model and target language", "openrouter deepl api key"),
                 ),
             ),
         ),
@@ -121,11 +119,8 @@ object SettingsHubs {
             SettingsLinkGroup(
                 "Sound",
                 listOf(
-                    SettingsLink("Equalizer", R.drawable.equalizer, { systemGreen }, route("settings/equalizer"), "Shape the sound", "eq bass treble"),
-                    SettingsLink("Quality & sound", R.drawable.tune, { systemBlue }, route("settings/player"),
-                        "Audio quality, normalization and skip silence", "quality normalization loudness silence"),
-                    SettingsLink("Song transitions", R.drawable.shuffle, { systemPurple }, route("settings/song_transitions"),
-                        "Crossfade, gapless and Automix", "crossfade gapless automix dj mixing"),
+                    SettingsLink("Sound & rules", R.drawable.tune, { systemBlue }, route("settings/player"),
+                        "Bit-perfect streaming, normalization and silence skip", "quality normalization loudness silence bit perfect"),
                 ),
             ),
             SettingsLinkGroup(
@@ -180,29 +175,7 @@ object SettingsHubs {
     )
 
     val library = SettingsHub(
-        "library", "Library & Content", R.drawable.music_note, { systemOrange },
-        listOf(
-            SettingsLinkGroup(
-                "Content",
-                listOf(
-                    SettingsLink("Region & filters", R.drawable.language, { systemBlue }, route("settings/content"),
-                        "Language, country, explicit, data saver", "language country explicit data saver"),
-                ),
-            ),
-            SettingsLinkGroup(
-                "Sources",
-                listOf(
-                    SettingsLink("Self-Hosted & Network storage", R.drawable.storage, { systemGreen }, route("settings/network_storage"), "Navidrome, SMB and WebDAV shares", "navidrome subsonic smb webdav nas server"),
-                    SettingsLink("Music folders", R.drawable.music_note, { systemOrange }, route("settings/player/local_folders"), "Choose local folders to scan", "local files"),
-                    SettingsLink("Scan local files", R.drawable.search, { systemBlue }, route("settings/scan_music"), "Find songs on this device"),
-                ),
-            ),
-
-        ),
-    )
-
-    val accounts = SettingsHub(
-        "accounts", "Sources & Services", R.drawable.storage, { systemGreen },
+        "library", "Library & Storage", R.drawable.storage, { systemOrange },
         listOf(
             SettingsLinkGroup(
                 "Music Sources",
@@ -213,21 +186,8 @@ object SettingsHubs {
                 ),
             ),
             SettingsLinkGroup(
-                "Services",
+                "Storage & Backup",
                 listOf(
-                    SettingsLink("Network & proxy", R.drawable.wifi_proxy, { systemGray }, route("settings/network"), "IP version and proxy", "proxy ipv6 ipv4 network"),
-                ),
-            ),
-        ),
-    )
-
-    val privacy = SettingsHub(
-        "privacy", "Privacy & Storage", R.drawable.security, { systemBlue },
-        listOf(
-            SettingsLinkGroup(
-                null,
-                listOf(
-                    SettingsLink("Privacy", R.drawable.security, { systemBlue }, route("settings/privacy"), "History and screenshots", "pause history clear history screenshot"),
                     SettingsLink("Storage", R.drawable.storage, { systemGray }, route("settings/storage"), "Downloads and caches", "cache downloads clear"),
                     SettingsLink("Backup & restore", R.drawable.restore, { systemGreen }, route("settings/backup_restore"), "Save or restore your library", "backup import export"),
                 ),
@@ -235,22 +195,19 @@ object SettingsHubs {
         ),
     )
 
-    val help = SettingsHub(
-        "help", "Help & About", R.drawable.info, { systemGray },
+    val privacy = SettingsHub(
+        "privacy", "Privacy & Security", R.drawable.security, { systemBlue },
         listOf(
             SettingsLinkGroup(
                 null,
                 listOf(
-                    SettingsLink("Crash report", R.drawable.bug_report, { systemRed }, route("settings/help/crash_logs"), "View or share the latest crash"),
-                    SettingsLink("Playback logs", R.drawable.bug_report, { systemOrange }, route("settings/content/advanced"), "Troubleshoot playback", "logs client probe"),
-                    SettingsLink("Changelog", R.drawable.network_update, { systemBlue }, route("settings/changelog"), "What's new"),
-                    SettingsLink("About", R.drawable.info, { systemGray }, route("settings/about"), "Version, licenses and project"),
+                    SettingsLink("Privacy", R.drawable.security, { systemBlue }, route("settings/privacy"), "History and playback privacy", "pause history clear history screenshot"),
                 ),
             ),
         ),
     )
 
-    val all = listOf(player, playback, appearance, library, accounts, privacy, help)
+    val all = listOf(player, playback, appearance, library, privacy)
 
     fun byId(id: String?) = all.firstOrNull { it.id == id }
 }

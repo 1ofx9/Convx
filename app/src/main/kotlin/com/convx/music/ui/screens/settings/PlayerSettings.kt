@@ -52,18 +52,7 @@ fun PlayerSettings(
     navController: NavController,
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
-    val (audioQuality, onAudioQualityChange) = rememberEnumPreference(
-        AudioQualityKey,
-        defaultValue = AudioQuality.AUTO
-    )
-    val (crossfadeEnabled) = rememberPreference(
-        CrossfadeEnabledKey,
-        defaultValue = false
-    )
-    val (autoDjMixingEnabled) = rememberPreference(
-        AutoDjMixingEnabledKey,
-        defaultValue = false
-    )
+
     val (persistentQueue, onPersistentQueueChange) = rememberPreference(
         PersistentQueueKey,
         defaultValue = true
@@ -118,30 +107,6 @@ fun PlayerSettings(
         KeepScreenOn,
         defaultValue = false
     )
-    var showAudioQualityDialog by remember {
-        mutableStateOf(false)
-    }
-
-    if (showAudioQualityDialog) {
-        EnumDialog(
-            onDismiss = { showAudioQualityDialog = false },
-            onSelect = {
-                onAudioQualityChange(it)
-                showAudioQualityDialog = false
-            },
-            title = stringResource(R.string.audio_quality),
-            current = audioQuality,
-            values = AudioQuality.values().toList(),
-            valueText = {
-                when (it) {
-                    AudioQuality.AUTO -> stringResource(R.string.audio_quality_auto)
-                    AudioQuality.HIGH -> stringResource(R.string.audio_quality_high)
-                    AudioQuality.LOW -> stringResource(R.string.audio_quality_low)
-                }
-            }
-        )
-    }
-
     SettingsLazyPage(
         navController = navController,
         title = stringResource(R.string.player_and_audio),
@@ -152,20 +117,6 @@ fun PlayerSettings(
                 IosSettingsGroup(
                     title = "Sound",
                     items = buildList {
-                        add(IosSettingsItem(
-                            icon = painterResource(R.drawable.graphic_eq),
-                            title = { Text(stringResource(R.string.audio_quality)) },
-                            description = {
-                                Text(
-                                    when (audioQuality) {
-                                        AudioQuality.AUTO -> stringResource(R.string.audio_quality_auto)
-                                        AudioQuality.HIGH -> stringResource(R.string.audio_quality_high)
-                                        AudioQuality.LOW -> stringResource(R.string.audio_quality_low)
-                                    }
-                                )
-                            },
-                            onClick = { showAudioQualityDialog = true }
-                        ))
                         add(IosSettingsItem(
                             icon = painterResource(R.drawable.volume_up),
                             title = { Text(stringResource(R.string.audio_normalization)) },
@@ -189,51 +140,6 @@ fun PlayerSettings(
                             },
                             onClick = { onSkipSilenceChange(!skipSilence) }
                         ))
-                        add(IosSettingsItem(
-                            icon = painterResource(R.drawable.convx_equalizer_icon),
-                            title = { Text(stringResource(R.string.convx_equalizer)) },
-                            description = { Text(stringResource(R.string.convx_equalizer_desc)) },
-                            onClick = { navController.navigate("settings/equalizer") }
-                        ))
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(27.dp))
-
-                IosSettingsGroup(
-                    title = "Transitions & output",
-                    items = buildList {
-                        add(IosSettingsItem(
-                            icon = painterResource(R.drawable.ic_queue_crossfade),
-                            title = { Text(stringResource(R.string.song_transitions)) },
-                            description = {
-                                Text(
-                                    stringResource(
-                                        when {
-                                            !crossfadeEnabled -> R.string.transition_off
-                                            autoDjMixingEnabled -> R.string.transition_automix
-                                            else -> R.string.crossfade
-                                        }
-                                    )
-                                )
-                            },
-                            onClick = { navController.navigate("settings/song_transitions") }
-                        ))
-                        // Only show Cast setting in GMS builds (not in F-Droid/FOSS)
-                        if (BuildConfig.CAST_AVAILABLE) {
-                            add(IosSettingsItem(
-                                icon = painterResource(R.drawable.cast),
-                                title = { Text(stringResource(R.string.google_cast)) },
-                                description = { Text(stringResource(R.string.google_cast_description)) },
-                                trailingContent = {
-                                    Switch(
-                                        checked = enableGoogleCast,
-                                        onCheckedChange = onEnableGoogleCastChange
-                                    )
-                                },
-                                onClick = { onEnableGoogleCastChange(!enableGoogleCast) }
-                            ))
-                        }
                     }
                 )
 

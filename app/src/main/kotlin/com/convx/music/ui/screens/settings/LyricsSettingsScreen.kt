@@ -36,7 +36,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 /** Lyrics look: glow and the two blur modes. Kept apart from the animation style and text layout. */
 @Composable
 fun LyricsSettingsScreen(navController: NavController) {
-    val (animationStyle, selectAnimationStyle) = rememberEnumPreference(LyricsAnimationStyleKey, LyricsAnimationStyle.FLAMINGO)
+    val (animationStyle, selectAnimationStyle) = rememberEnumPreference(LyricsAnimationStyleKey, LyricsAnimationStyle.APPLE_V2)
     var showStyleDialog by rememberSaveable { mutableStateOf(false) }
     if (showStyleDialog) {
         EnumDialog(
@@ -53,7 +53,7 @@ fun LyricsSettingsScreen(navController: NavController) {
     var paxKey by remember { mutableStateOf(credentials.getString("paxsenix_api_key", "").orEmpty()) }
     val (glow, onGlowChange) = rememberPreference(LyricsGlowEffectKey, defaultValue = true)
     val (appleBlur, onAppleBlurChange) = rememberPreference(AppleMusicLyricsBlurKey, defaultValue = true)
-    val (standardBlur, onStandardBlurChange) = rememberPreference(LyricsStandardBlurKey, defaultValue = false)
+    val (standardBlur, onStandardBlurChange) = rememberPreference(LyricsStandardBlurKey, defaultValue = true)
 
     SettingsPage(navController = navController, title = stringResource(R.string.lyrics), horizontalPadding = 16.dp) {
         IosSettingsGroup(title = stringResource(R.string.lyrics_animation_style), items = listOf(

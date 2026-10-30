@@ -42,11 +42,16 @@ object NetworkLibraryImporter {
         library.playlists.forEach { pl ->
             try {
                 database.withTransaction {
+                    val now = LocalDateTime.now()
                     val entity = PlaylistEntity(
                         id = pl.id,
                         name = pl.name,
                         thumbnailUrl = pl.thumbnailUrl,
                         isLocal = true,
+                        bookmarkedAt = now,
+                        lastUpdateTime = now,
+                        createdAt = now,
+                        isEditable = true,
                     )
                     insert(entity)
                     update(entity)

@@ -208,7 +208,6 @@ val GoogleSansFlex = FontFamily(
 @Composable
 fun WelcomePagerScreen(onFinished: () -> Unit) {
     val context = LocalContext.current
-    val uriHandler = LocalUriHandler.current
     val scope = rememberCoroutineScope()
     val commonAnimSpec = tween<Float>(durationMillis = 200, easing = FastOutSlowInEasing)
     val commonDpAnimSpec = tween<Dp>(durationMillis = 200, easing = FastOutSlowInEasing)
@@ -267,15 +266,12 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
         )
     }
 
-    var canInstallPackages by remember {
-        mutableStateOf(
-            if (BuildConfig.FLAVOR.contains("gms") && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                runCatching { context.packageManager.canRequestPackageInstalls() }.getOrDefault(false)
-            } else true
-        )
-    }
-
-    var isLastPageScrolledToEnd by remember { mutableStateOf(true) }
+    val notificationLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            hasNotificationPermission = isGranted
+        }
+    )
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -291,28 +287,10 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                         Manifest.permission.POST_NOTIFICATIONS
                     ) == PackageManager.PERMISSION_GRANTED
                 }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    canInstallPackages = runCatching { context.packageManager.canRequestPackageInstalls() }.getOrDefault(false)
-                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
-    val notificationLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted ->
-            hasNotificationPermission = isGranted
-        }
-    )
-
-    val installParamsLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            canInstallPackages = runCatching { context.packageManager.canRequestPackageInstalls() }.getOrDefault(false)
-        }
     }
 
     val pages = listOf(
@@ -338,13 +316,12 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                         lineHeight = 56.sp
                     )
 
-                    val flavorSuffix = if (BuildConfig.FLAVOR.contains("gms", ignoreCase = true)) "Gms Edition" else "Foss Edition"
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(start = 2.dp)
                     ) {
                         Text(
-                            text = flavorSuffix,
+                            text = "Lossless Audio Edition",
                             fontFamily = GoogleSansFlex,
                             style = AppTheme.typography.titleMedium,
                             color = AppTheme.colorScheme.secondary
@@ -379,7 +356,7 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                         Spacer(modifier = Modifier.height(32.dp))
 
                         Text(
-                            text = "Lossless self-hosted Navidrome & local music player with Cupertino Liquid Glass.",
+                            text = "Bit-perfect streaming from your Navidrome server and pristine playback of local audio files with fluid Cupertino Liquid Glass.",
                             fontFamily = GoogleSansFlex,
                             style = AppTheme.typography.bodyLarge,
                             color = AppTheme.colorScheme.onSurfaceVariant,
@@ -415,7 +392,7 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = stringResource(com.convx.music.R.string.perm_intro_text),
+                        text = "Convx operates completely private and offline. We only request permissions necessary to read your audio library and display playback controls.",
                         style = AppTheme.typography.bodyLarge.copy(
                             fontFamily = GoogleSansFlex
                         ),
@@ -471,7 +448,7 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                             iconTint = Color(0xFF8d0053),
                             title = stringResource(com.convx.music.R.string.perm_notif_title),
                             description = stringResource(com.convx.music.R.string.perm_notif_desc),
-                            shape = if (BuildConfig.FLAVOR.contains("gms", ignoreCase = true)) middleCardShape else bottomCardShape,
+                            shape = bottomCardShape,
                             control = {
                                 Switch(
                                     checked = hasNotificationPermission,
@@ -511,31 +488,6 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                             }
                         )
 
-                        if (BuildConfig.FLAVOR.contains("gms", ignoreCase = true)) {
-                            Spacer(modifier = Modifier.height(2.dp))
-
-                            PermissionCard(
-                                icon = rememberVectorPainter(Icons.Rounded.SystemUpdate),
-                                iconColor = Color(0xFFffb683),
-                                iconTint = Color(0xFF753403),
-                                title = stringResource(com.convx.music.R.string.perm_install_title),
-                                description = stringResource(com.convx.music.R.string.perm_install_desc),
-                                shape = bottomCardShape,
-                                control = {
-                                    SymbolIcon(symbol = if (canInstallPackages) sf("checkmark") else sf("chevron.right"), contentDescription = null, tint = if (canInstallPackages) AppTheme.colorScheme.primary else AppTheme.colorScheme.onSurfaceVariant)
-                                },
-                                onClick = {
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                        val intent =
-                                            Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                                                data = Uri.parse("package:${context.packageName}")
-                                            }
-                                        installParamsLauncher.launch(intent)
-                                    }
-                                }
-                            )
-                        }
-
                         Spacer(modifier = Modifier.height(100.dp))
                     }
                 }
@@ -550,12 +502,12 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                     Spacer(modifier = Modifier.height(80.dp))
 
                     Text(
-                        text = "Join our",
+                        text = "Ready to",
                         style = thinHeaderStyle,
                         color = AppTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "Community",
+                        text = "LISTEN",
                         fontFamily = GoogleSansFlex,
                         fontWeight = FontWeight.Bold,
                         fontSize = 48.sp,
@@ -566,7 +518,7 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "Convx is open-source and depends on community support to grow. Your help makes a difference!",
+                        text = "Your library is ready. Connect your Navidrome server or browse local high-resolution audio files.",
                         style = AppTheme.typography.bodyLarge.copy(
                             fontFamily = GoogleSansFlex
                         ),
@@ -580,186 +532,38 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                             .fillMaxWidth()
                             .verticalScroll(rememberScrollState())
                     ) {
-                        PermissionCard(
-                            icon = rememberVectorPainter(Icons.Rounded.Star),
-                            iconColor = Color(0xFFfff1a8),
-                            iconTint = Color(0xFF8d6e00),
-                            title = "Star on GitHub",
-                            description = "Help us reach more people by starring our repository.",
-                            shape = topCardShape,
-                            control = {
-                                SymbolIcon(symbol = sf("chevron.right"), contentDescription = null, tint = AppTheme.colorScheme.onSurfaceVariant)
-                            },
-                            onClick = {
-                                uriHandler.safeOpenUri(context, "https://github.com/cosmictaserdev-creator/Convx")
-                            }
+                        FeatureCard(
+                            icon = painterResource(com.convx.music.R.drawable.cloud),
+                            iconColor = Color(0xFF67d4ff),
+                            iconTint = Color(0xFF004e5d),
+                            title = "Self-Hosted Streaming",
+                            description = "Lossless direct FLAC streaming from your personal Navidrome / Subsonic server with synced lyrics.",
+                            shape = topCardShape
                         )
 
                         Spacer(modifier = Modifier.height(2.dp))
 
-                        PermissionCard(
-                            icon = rememberVectorPainter(SfSymbols.Monochrome.SFEllipsisBubble),
-                            iconColor = Color(0xFF67d4ff),
-                            iconTint = Color(0xFF004e5d),
-                            title = "Join Discord",
-                            description = "Get the latest updates and chat with the community.",
-                            shape = bottomCardShape,
-                            control = {
-                                SymbolIcon(symbol = sf("chevron.right"), contentDescription = null, tint = AppTheme.colorScheme.onSurfaceVariant)
-                            },
-                            onClick = {
-                                uriHandler.safeOpenUri(context, "https://discord.gg/Ejeb4cmzfd")
-                            }
+                        FeatureCard(
+                            icon = painterResource(com.convx.music.R.drawable.storage),
+                            iconColor = Color(0xFF80da88),
+                            iconTint = Color(0xFF00522c),
+                            title = "Local Music Storage",
+                            description = "Zero latency, pristine bit-perfect playback from your device's audio folders.",
+                            shape = middleCardShape
+                        )
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        FeatureCard(
+                            icon = painterResource(com.convx.music.R.drawable.security),
+                            iconColor = Color(0xFFb6c6ed),
+                            iconTint = Color(0xFF001b3f),
+                            title = "Private & Bit-Perfect",
+                            description = "No telemetry, no tracking, no external ads. Pure music on your terms.",
+                            shape = bottomCardShape
                         )
 
                         Spacer(modifier = Modifier.height(100.dp))
-                    }
-                }
-            }
-        ),
-        OnboardingPageInfo(
-            content = { onUpdateScroll ->
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.Start
-                ) {
-                    Spacer(modifier = Modifier.height(80.dp))
-
-                    Column(modifier = Modifier.padding(bottom = 16.dp)) {
-                        Text(
-                            text = stringResource(com.convx.music.R.string.feat_discover),
-                            style = thinHeaderStyle,
-                            color = AppTheme.colorScheme.onBackground
-                        )
-                        Text(
-                            text = stringResource(com.convx.music.R.string.feat_features),
-                            fontFamily = GoogleSansFlex,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 48.sp,
-                            color = AppTheme.colorScheme.primary,
-                            lineHeight = 56.sp
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Text(
-                            text = stringResource(com.convx.music.R.string.feat_intro),
-                            style = AppTheme.typography.bodyLarge.copy(
-                                fontFamily = GoogleSansFlex
-                            ),
-                            color = AppTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Box(modifier = Modifier.weight(1f)) {
-                        val scrollState = rememberScrollState()
-
-                        val isAtBottom by remember {
-                            derivedStateOf {
-                                val layoutInfo = scrollState.maxValue
-                                layoutInfo == 0 || scrollState.value >= (layoutInfo - 20)
-                            }
-                        }
-
-                        LaunchedEffect(isAtBottom) {
-                            onUpdateScroll(isAtBottom)
-                        }
-
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .verticalScroll(scrollState)
-                        ) {
-                            FeatureCard(
-                                icon = rememberVectorPainter(Icons.Rounded.Lyrics),
-                                iconColor = Color(0xFFffaee4),
-                                iconTint = Color(0xFF8d0053),
-                                title = stringResource(com.convx.music.R.string.feat_lyrics_title),
-                                description = stringResource(com.convx.music.R.string.feat_lyrics_desc),
-                                shape = topCardShape
-                            )
-
-                            Spacer(modifier = Modifier.height(2.dp))
-
-                            FeatureCard(
-                                icon = rememberVectorPainter(Icons.Rounded.CloudDownload),
-                                iconColor = Color(0xFF80da88),
-                                iconTint = Color(0xFF00522c),
-                                shape = middleCardShape,
-                                title = stringResource(com.convx.music.R.string.feat_download_title),
-                                description = stringResource(com.convx.music.R.string.feat_download_desc)
-                            )
-
-                            Spacer(modifier = Modifier.height(2.dp))
-
-                            FeatureCard(
-                                icon = rememberVectorPainter(Icons.Rounded.HighQuality),
-                                iconColor = Color(0xFFffb683),
-                                iconTint = Color(0xFF753403),
-                                title = stringResource(com.convx.music.R.string.feat_quality_title),
-                                description = stringResource(com.convx.music.R.string.feat_quality_desc),
-                                shape = middleCardShape
-                            )
-
-                            Spacer(modifier = Modifier.height(2.dp))
-
-                            FeatureCard(
-                                icon = rememberVectorPainter(Icons.Rounded.BlurOn),
-                                iconColor = Color(0xFFcabeff),
-                                iconTint = Color(0xFF1c0062),
-                                title = stringResource(com.convx.music.R.string.feat_glass_title),
-                                description = stringResource(com.convx.music.R.string.feat_glass_desc),
-                                shape = middleCardShape
-                            )
-
-                            Spacer(modifier = Modifier.height(2.dp))
-
-                            FeatureCard(
-                                icon = rememberVectorPainter(Icons.Rounded.CloudDownload),
-                                iconColor = Color(0xFF67d4ff),
-                                iconTint = Color(0xFF004e5d),
-                                title = "Navidrome Self-Hosted",
-                                description = "Stream your music library in bit-perfect lossless quality with synchronized lyrics from your Navidrome server.",
-                                shape = middleCardShape
-                            )
-
-                            if (BuildConfig.FLAVOR.contains("gms", ignoreCase = true)) {
-                                Spacer(modifier = Modifier.height(2.dp))
-
-                                FeatureCard(
-                                    icon = rememberVectorPainter(Icons.Rounded.SystemUpdate),
-                                    iconColor = Color(0xFF67d4ff),
-                                    iconTint = Color(0xFF004e5d),
-                                    title = stringResource(com.convx.music.R.string.feat_update_title),
-                                    description = stringResource(com.convx.music.R.string.feat_update_desc),
-                                    shape = middleCardShape
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(2.dp))
-
-                            FeatureCard(
-                                icon = rememberVectorPainter(Icons.Rounded.Gavel),
-                                iconColor = Color(0xFFb6c6ed),
-                                iconTint = Color(0xFF001b3f),
-                                title = stringResource(com.convx.music.R.string.feat_license_title),
-                                description = stringResource(com.convx.music.R.string.feat_license_desc),
-                                shape = middleCardShape
-                            )
-
-                            Spacer(modifier = Modifier.height(2.dp))
-
-                            FeatureCard(
-                                icon = rememberVectorPainter(Icons.Rounded.Terminal),
-                                iconColor = Color(0xFFcabeff),
-                                iconTint = Color(0xFF1c0062),
-                                title = stringResource(com.convx.music.R.string.feat_github_title),
-                                description = stringResource(com.convx.music.R.string.feat_github_desc),
-                                shape = bottomCardShape
-                            )
-
-                            Spacer(modifier = Modifier.height(100.dp))
-                        }
                     }
                 }
             }
@@ -792,9 +596,6 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
             HorizontalPager(
                 state = pagerState,
                 userScrollEnabled = false,
-                // Four light pages: compose them all up front. With the default (0) the next
-                // page is composed the moment the transition starts, on the UI thread, in the
-                // middle of the animation.
                 beyondViewportPageCount = pages.size - 1,
                 modifier = Modifier
                     .weight(1f)
@@ -804,10 +605,6 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer {
-                            // iOS-style crossfade: the outgoing page shrinks slightly and
-                            // slides out while the incoming page does the reverse, driven by
-                            // the pager's own scroll so it plays during animateScrollToPage.
-                            // No RenderEffect blur: a full-page blur per frame blows the budget.
                             val pageOffset = pagerState.getOffsetDistanceInPages(index)
                             val absOffset = pageOffset.absoluteValue.coerceIn(0f, 1f)
                             alpha = 1f - absOffset
@@ -816,11 +613,7 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                             scaleY = 1f - absOffset * 0.08f
                         }
                 ) {
-                    pages[index].content { scrolledToEnd ->
-                        if (index == pages.size - 1) {
-                            isLastPageScrolledToEnd = true
-                        }
-                    }
+                    pages[index].content { }
                 }
             }
 
@@ -911,20 +704,13 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                         .weight(1f)
                         .fillMaxHeight()
                 ) {
-                    val isNextEnabled = !isLastPage || isLastPageScrolledToEnd
-
-                    val alphaNext by animateFloatAsState(
-                        targetValue = if (isNextEnabled) 1f else 0.5f,
-                        label = "nextAlpha"
-                    )
-
                     WelcomeExpressiveButton(
                         text = if (isLastPage) stringResource(com.convx.music.R.string.get_started) else stringResource(
                             com.convx.music.R.string.next
                         ),
                         onClick = {
                             if (isLastPage) {
-                                if (isLastPageScrolledToEnd) onFinished()
+                                onFinished()
                             } else {
                                 scope.launch {
                                     pagerState.animateScrollToPage(
@@ -934,8 +720,8 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                                 }
                             }
                         },
-                        containerColor = AppTheme.colorScheme.primary.copy(alpha = alphaNext),
-                        contentColor = AppTheme.colorScheme.onPrimary.copy(alpha = alphaNext),
+                        containerColor = AppTheme.colorScheme.primary,
+                        contentColor = AppTheme.colorScheme.onPrimary,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
