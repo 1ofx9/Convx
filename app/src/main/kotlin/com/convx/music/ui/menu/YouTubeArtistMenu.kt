@@ -35,7 +35,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.music.innertube.models.ArtistItem
 import com.convx.music.LocalDatabase
-import com.convx.music.LocalListenTogetherManager
 import com.convx.music.LocalPlayerConnection
 import com.convx.music.R
 import com.convx.music.db.entities.SpeedDialItem
@@ -61,8 +60,7 @@ fun YouTubeArtistMenu(
     val database = LocalDatabase.current.get()
     val playerConnection = LocalPlayerConnection.current ?: return
     val libraryArtist by database.artist(artist.id).collectAsState(initial = null)
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val isGuest = listenTogetherManager?.isInRoom == true && !listenTogetherManager.isHost
+    val isGuest = false
     val isPinned by database.speedDialDao.isPinned(artist.id).collectAsState(initial = false)
     val coroutineScope = rememberCoroutineScope()
 

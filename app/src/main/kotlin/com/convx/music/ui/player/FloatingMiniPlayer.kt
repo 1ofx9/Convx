@@ -91,7 +91,6 @@ import coil3.request.ImageRequest
 import coil3.size.Size as CoilSize
 import androidx.compose.ui.platform.LocalContext
 import com.convx.music.ui.component.rememberNoArtworkPainter
-import com.convx.music.LocalListenTogetherManager
 import com.convx.music.LocalPlayerConnection
 import com.convx.music.R
 import com.convx.music.ui.player.customize.PlayerGlyph
@@ -212,8 +211,7 @@ fun FloatingMiniPlayer(
     val swipeThumbnailPref by rememberPreference(SwipeThumbnailKey, true)
     val (tabStyle) = rememberPreference(MiniBarTabStyleKey, defaultValue = false)
     val miniPlayerWaveform by rememberPreference(MiniPlayerWaveformKey, defaultValue = false)
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
+    val isListenTogetherGuest = false
     val swipeEnabled = swipeThumbnailPref && !isListenTogetherGuest
 
     val layoutDirection = LocalLayoutDirection.current

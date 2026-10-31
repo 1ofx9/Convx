@@ -550,39 +550,5 @@ fun CanvasVideoSurface(
 
 private const val SURFACE_FADE_IN_MS = 420
 
-private suspend fun fetchCanvasArtwork(context: Context, metadata: MediaMetadata, canvasSource: CanvasSource): CanvasArtwork? {
-    val cacheKey = "${metadata.id}:${canvasSource.name}"
-    CanvasArtworkPlaybackCache.get(cacheKey)?.let { return it }
-    val countryCode = Locale.getDefault().country
-    val storefront = if (countryCode.length == 2) countryCode.lowercase(Locale.ROOT) else "us"
-    val fetched = withContext(Dispatchers.IO) {
-        runCatching {
-            val songTitle = metadata.title
-            val artistName = metadata.artists.firstOrNull()?.name ?: ""
-            val albumName = metadata.album?.title ?: ""
-            when (canvasSource) {
-                CanvasSource.AUTO ->
-                    SpotifyCanvasLookup.getBySongArtist(context, songTitle, artistName)
-                        ?: AppleMusicCanvasProvider.getBySongArtist(songTitle, artistName, albumName, storefront)
-                        ?.takeIf { !it.animated.isNullOrBlank() }
-                        ?: TidalCanvasProvider.getBySongArtist(songTitle, artistName, albumName)
-                            ?.takeIf { !it.animated.isNullOrBlank() }
-                        ?: ConvxCanvasProvider.getBySongArtist(songTitle, artistName)
-                            ?.takeIf { !it.animated.isNullOrBlank() }
-                CanvasSource.APPLE_MUSIC ->
-                    AppleMusicCanvasProvider.getBySongArtist(songTitle, artistName, albumName, storefront)
-                        ?.takeIf { !it.animated.isNullOrBlank() }
-                CanvasSource.CONVX ->
-                    ConvxCanvasProvider.getBySongArtist(songTitle, artistName)
-                        ?.takeIf { !it.animated.isNullOrBlank() }
-                CanvasSource.TIDAL ->
-                    TidalCanvasProvider.getBySongArtist(songTitle, artistName, albumName)
-                        ?.takeIf { !it.animated.isNullOrBlank() }
-                CanvasSource.SPOTIFY ->
-                    SpotifyCanvasLookup.getBySongArtist(context, songTitle, artistName)
-            }
-        }.getOrNull()
-    }
-    if (fetched != null) CanvasArtworkPlaybackCache.put(cacheKey, fetched)
-    return fetched
-}
+@Suppress("UNUSED_PARAMETER")
+private suspend fun fetchCanvasArtwork(context: Context, metadata: MediaMetadata, canvasSource: CanvasSource): CanvasArtwork? = null

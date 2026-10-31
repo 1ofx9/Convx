@@ -58,6 +58,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -148,7 +150,6 @@ import com.music.innertube.models.PlaylistItem
 import com.music.innertube.models.SongItem
 import com.music.innertube.models.WatchEndpoint
 import com.convx.music.LocalDatabase
-import com.convx.music.LocalListenTogetherManager
 import com.convx.music.LocalPlayerAwareWindowInsets
 import com.convx.music.LocalPlayerConnection
 import com.convx.music.R
@@ -248,12 +249,12 @@ fun ArtistScreen(
     val haptic = LocalHapticFeedback.current
     val coroutineScope = rememberCoroutineScope()
     val playerConnection = LocalPlayerConnection.current ?: return
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val isGuest = listenTogetherManager?.isInRoom == true && !listenTogetherManager.isHost
+    val isGuest = false
     val isPlaying by playerConnection.isEffectivelyPlaying.collectAsStateWithLifecycle()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
     val artistPage = viewModel.artistPage
     val libraryArtist by viewModel.libraryArtist.collectAsStateWithLifecycle()
+    var showArtistInfoDialog by rememberSaveable { mutableStateOf(false) }
     val librarySongs by viewModel.librarySongs.collectAsStateWithLifecycle()
     val libraryAlbums by viewModel.libraryAlbums.collectAsStateWithLifecycle()
     val hideExplicit by rememberPreference(key = HideExplicitKey, defaultValue = false)
@@ -272,7 +273,7 @@ fun ArtistScreen(
     // samples once scrolled past the photo.
     val hazeState = remember { HazeState() }
     val snackbarHostState = remember { SnackbarHostState() }
-    var showLocal by rememberSaveable { mutableStateOf(false) }
+    var showLocal by rememberSaveable { mutableStateOf(true) }
     val density = LocalDensity.current
 
     val systemBarsTopPadding = WindowInsets.systemBars.asPaddingValues().calculateTopPadding()
@@ -296,7 +297,7 @@ fun ArtistScreen(
     }
 
     LaunchedEffect(libraryArtist) {
-        showLocal = libraryArtist?.artist?.isLocal == true
+        showLocal = true
     }
 
     // Seed the hero with the fastest available artwork while page data loads.
@@ -421,7 +422,7 @@ fun ArtistScreen(
             modifier = Modifier.heroPullZoom(heroZoom),
             contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
         ) {
-            if (artistPage == null && !showLocal) {
+            if (libraryArtist == null && librarySongs.isEmpty() && libraryAlbums.isEmpty()) {
                 item(key = "shimmer") {
                     Column(
                         modifier = Modifier
@@ -503,6 +504,49 @@ fun ArtistScreen(
                     val thumbnail = artistPage?.artist?.thumbnail ?: libraryArtist?.artist?.thumbnailUrl
                     val artistName = artistPage?.artist?.title ?: libraryArtist?.artist?.name
                     val displayArtistName = artistName?.titlecaseWords() ?: "Unknown"
+
+                    if (showArtistInfoDialog) {
+                        com.convx.music.ui.ios.compat.AlertDialog(
+                            onDismissRequest = { showArtistInfoDialog = false },
+                            confirmButton = {
+                                com.convx.music.ui.ios.compat.TextButton(onClick = { showArtistInfoDialog = false }) {
+                                    Text(stringResource(android.R.string.ok))
+                                }
+                            },
+                            title = {
+                                Text(
+                                    text = displayArtistName,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            },
+                            text = {
+                                val bio = artistPage?.description
+                                Column(
+                                    modifier = Modifier
+                                        .verticalScroll(rememberScrollState())
+                                        .fillMaxWidth()
+                                ) {
+                                    if (!bio.isNullOrBlank()) {
+                                        Text(
+                                            text = bio,
+                                            color = AppTheme.colorScheme.onSurface
+                                        )
+                                        Spacer(Modifier.height(16.dp))
+                                    } else {
+                                        Text(
+                                            text = "No biography available for this artist.",
+                                            color = AppTheme.colorScheme.secondary
+                                        )
+                                        Spacer(Modifier.height(16.dp))
+                                    }
+                                    Text(
+                                        text = "${libraryAlbums.size} albums • ${librarySongs.size} songs in library",
+                                        color = AppTheme.colorScheme.secondary
+                                    )
+                                }
+                            }
+                        )
+                    }
                     LaunchedEffect(displayArtistName) {
                         viewModel.fetchArtistSignature(displayArtistName)
                     }
@@ -632,13 +676,7 @@ fun ArtistScreen(
                                     pageBgRgb = pageBgRgb,
                                     isPlaying = isPlayingThisArtist,
                                     isSubscribed = isSubscribed,
-                                    onInfo = {
-                                        coroutineScope.launch {
-                                            lazyListState.animateScrollToItem(
-                                                (lazyListState.layoutInfo.totalItemsCount - 1).coerceAtLeast(0),
-                                            )
-                                        }
-                                    },
+                                    onInfo = { showArtistInfoDialog = true },
                                     onPlay = onPlay,
                                     onSubscribe = onSubscribe,
                                 )
@@ -726,13 +764,7 @@ fun ArtistScreen(
                                         pageBgRgb = pageBgRgb,
                                         isPlaying = isPlayingThisArtist,
                                         isSubscribed = isSubscribed,
-                                        onInfo = {
-                                            coroutineScope.launch {
-                                                lazyListState.animateScrollToItem(
-                                                    (lazyListState.layoutInfo.totalItemsCount - 1).coerceAtLeast(0),
-                                                )
-                                            }
-                                        },
+                                        onInfo = { showArtistInfoDialog = true },
                                         onPlay = onPlay,
                                         onSubscribe = onSubscribe,
                                     )
@@ -1181,19 +1213,7 @@ fun ArtistScreen(
         }
         }
 
-        val showLocalFab = librarySongs.isNotEmpty() && libraryArtist?.artist?.isLocal != true
-        
-        // Library/Local Toggle FAB
-        HideOnScrollFAB(
-            visible = showLocalFab,
-            lazyListState = lazyListState,
-            icon = if (showLocal) R.drawable.language else R.drawable.library_music,
-            onClick = {
-                showLocal = showLocal.not()
-                if (!showLocal && artistPage == null) viewModel.fetchArtistsFromYTM()
-            },
-            hazeState = hazeState,
-        )
+
         
         SnackbarHost(
             hostState = snackbarHostState,

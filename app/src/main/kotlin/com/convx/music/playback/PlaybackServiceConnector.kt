@@ -7,7 +7,6 @@ import android.content.ServiceConnection
 import android.os.IBinder
 import androidx.lifecycle.LifecycleCoroutineScope
 import com.convx.music.db.MusicDatabase
-import com.convx.music.listentogether.ListenTogetherPlayerConnectionBridge
 import com.convx.music.playback.MusicService.MusicBinder
 import dagger.hilt.android.scopes.ActivityScoped
 import kotlinx.coroutines.CancellationException
@@ -22,7 +21,6 @@ import javax.inject.Provider
 @ActivityScoped
 class PlaybackServiceConnector @Inject constructor(
     private val databaseProvider: Provider<MusicDatabase>,
-    private val listenTogetherConnectionBridge: ListenTogetherPlayerConnectionBridge,
 ) : ServiceConnection {
     private var isBound = false
     private var lifecycleScope: LifecycleCoroutineScope? = null
@@ -97,7 +95,6 @@ class PlaybackServiceConnector @Inject constructor(
     }
 
     private fun onPlayerConnectionChanged(connection: PlayerConnection?) {
-        listenTogetherConnectionBridge.update(connection)
         onConnectionChanged?.invoke(connection)
     }
 

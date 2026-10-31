@@ -62,6 +62,7 @@ fun ScreenChromeBox(
     onBack: (() -> Unit)?,
     onBackLongClick: (() -> Unit)?,
     actions: @Composable () -> Unit,
+    showTopBlur: Boolean = true,
     titleAlphaProvider: (() -> Float)? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
@@ -84,11 +85,13 @@ fun ScreenChromeBox(
             content = content,
         )
 
-        TopFadeBlur(
-            hazeState = chrome.hazeState,
-            pageColor = pageColor,
-            modifier = Modifier.align(Alignment.TopCenter),
-        )
+        if (showTopBlur) {
+            TopFadeBlur(
+                hazeState = chrome.hazeState,
+                pageColor = pageColor,
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
+        }
 
         FrostedTopBar(
             onBack = onBack,
@@ -121,6 +124,7 @@ fun ScreenScaffold(
     onBackLongClick: (() -> Unit)? = null,
     pageColor: Color = AppTheme.colorScheme.background,
     actions: @Composable () -> Unit = {},
+    showTopBlur: Boolean = true,
     titleAlphaProvider: (() -> Float)? = null,
     content: @Composable BoxScope.(GlassScreenChrome) -> Unit,
 ) {
@@ -135,6 +139,7 @@ fun ScreenScaffold(
             onBack = onBack,
             onBackLongClick = onBackLongClick,
             actions = actions,
+            showTopBlur = showTopBlur,
         ) {
             content(chrome)
         }
@@ -171,6 +176,7 @@ fun ScreenPage(
     pageColor: Color = AppTheme.colorScheme.background,
     horizontalPadding: Dp = 0.dp,
     actions: @Composable () -> Unit = {},
+    showTopBlur: Boolean = true,
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     scrollState: ScrollState = rememberScrollState(),
     largeTitle: @Composable () -> Unit = { ScreenLargeTitle(title) },
@@ -195,6 +201,7 @@ fun ScreenPage(
             onBack = onBack,
             onBackLongClick = onBackLongClick,
             actions = actions,
+            showTopBlur = showTopBlur,
         ) {
             Column(
                 modifier = modifier
@@ -245,6 +252,7 @@ fun ScreenLazyPage(
     pageColor: Color = AppTheme.colorScheme.background,
     horizontalPadding: Dp = 0.dp,
     actions: @Composable () -> Unit = {},
+    showTopBlur: Boolean = true,
     listState: LazyListState = rememberLazyListState(),
     largeTitle: @Composable () -> Unit = { ScreenLargeTitle(title) },
     content: LazyListScope.() -> Unit,
@@ -262,6 +270,7 @@ fun ScreenLazyPage(
             onBack = onBack,
             onBackLongClick = onBackLongClick,
             actions = actions,
+            showTopBlur = showTopBlur,
         ) {
             val sideInsets = LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Horizontal).asPaddingValues()
             val direction = androidx.compose.ui.platform.LocalLayoutDirection.current

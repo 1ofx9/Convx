@@ -100,14 +100,17 @@ fun AppTopBar(
         ) {
             Box(modifier = Modifier.fillMaxWidth()) {
                 // Keep the blur fixed during scrolling; route visibility controls when it hides.
-                TopFadeBlur(
-                    hazeState = hazeState,
-                    pageColor = rememberAppBackgroundTint(
-                        AppTheme.colorScheme.background
-                    ),
-                    backdrop = backdrop,
-                    startFade = if (showRail) startInset else 0.dp,
-                )
+                val isSettings = effectiveRoute == com.convx.music.ui.screens.Screens.Settings.route || effectiveRoute?.startsWith("settings") == true
+                if (!isSettings) {
+                    TopFadeBlur(
+                        hazeState = hazeState,
+                        pageColor = rememberAppBackgroundTint(
+                            AppTheme.colorScheme.background
+                        ),
+                        backdrop = backdrop,
+                        startFade = if (showRail) startInset else 0.dp,
+                    )
+                }
                 // Titles/wordmark stay neutral per theme; only hero-tinted
                 // screens keep the artwork-derived accent text.
                 val topBarAmbient = LocalAmbientBackgroundColor.current.value

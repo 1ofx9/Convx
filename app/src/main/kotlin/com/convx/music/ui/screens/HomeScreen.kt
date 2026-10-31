@@ -779,9 +779,6 @@ fun HomeScreen(
                                     }
                                 }
                             }
-                        },
-                        onRecognitionClick = {
-                            navController.navigate("recognition")
                         }
                     )
                 }

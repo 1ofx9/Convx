@@ -10,8 +10,15 @@ import kotlin.math.abs
 
 internal val LyricScrollSpec = tween<Float>(550, easing = CubicBezierEasing(0.75f, 0f, 0.25f, 1f))
 
-internal fun lyricCenterDistance(start: Int, end: Int, itemOffset: Int, itemSize: Int): Float =
-    itemOffset + itemSize / 2f - (start + end) / 2f
+/**
+ * Anchors the active lyric line at ~32% from the top of the visible viewport,
+ * matching Apple Music's layout so the active line and upcoming text stay cleanly
+ * above the transport controls in both fullscreen and standard modes.
+ */
+internal fun lyricCenterDistance(start: Int, end: Int, itemOffset: Int, itemSize: Int): Float {
+    val targetAnchor = start + (end - start) * 0.28f
+    return (itemOffset + itemSize / 2f) - targetAnchor
+}
 
 /** One owner scrolls each list; new targets cancel the previous animation through LaunchedEffect. */
 internal suspend fun LazyListState.followLyricLine(itemIndex: Int, animate: Boolean = true) {
@@ -19,7 +26,8 @@ internal suspend fun LazyListState.followLyricLine(itemIndex: Int, animate: Bool
     var item = layoutInfo.visibleItemsInfo.firstOrNull { it.index == itemIndex }
     if (item == null) {
         val viewport = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
-        scrollToItem(itemIndex, -viewport / 2)
+        val targetOffset = -(viewport * 0.28f).toInt()
+        scrollToItem(itemIndex, targetOffset)
         withFrameNanos { }
         item = layoutInfo.visibleItemsInfo.firstOrNull { it.index == itemIndex } ?: return
     }

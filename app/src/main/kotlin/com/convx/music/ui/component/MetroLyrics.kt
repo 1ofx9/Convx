@@ -49,7 +49,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.convx.music.LocalPlayerConnection
 import com.convx.music.constants.AppleMusicLyricsBlurKey
-import com.convx.music.constants.LyricsRomanizeAsMainKey
 import com.convx.music.lyrics.LyricsEntry
 import com.convx.music.lyrics.wordsWithSpacing
 import com.convx.music.ui.screens.settings.LyricsPosition
@@ -122,7 +121,6 @@ fun MetroLyricsLine(
     distanceFromCurrent: Int,
     lyricsTextPosition: LyricsPosition,
     textColor: Color,
-    showRomanized: Boolean,
     showTranslated: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -133,16 +131,7 @@ fun MetroLyricsLine(
     modifier: Modifier = Modifier
 ) {
     val (appleMusicLyricsBlur) = rememberPreference(AppleMusicLyricsBlurKey, true)
-    val (romanizeAsMain) = rememberPreference(LyricsRomanizeAsMainKey, false)
-    
-    val romanizedTextState by entry.romanizedTextFlow.collectAsStateWithLifecycle()
-    val isRomanizedAvailable = romanizedTextState != null
-    
-    val mainTextRaw = if (showRomanized && romanizeAsMain && isRomanizedAvailable) romanizedTextState else entry.text
-    val subTextRaw = if (showRomanized && romanizeAsMain && isRomanizedAvailable) entry.text else if (showRomanized) romanizedTextState else null
-    
-    val mainText = if (entry.isBackground) mainTextRaw?.removePrefix("(")?.removeSuffix(")") ?: "" else mainTextRaw ?: ""
-    val subText = if (entry.isBackground) subTextRaw?.removePrefix("(")?.removeSuffix(")") else subTextRaw
+    val mainText = if (entry.isBackground) entry.text.removePrefix("(").removeSuffix(")") else entry.text
     
     val targetBlur = if (!appleMusicLyricsBlur || !isAutoScrollActive || isActive || !isSynced || isSelectionModeActive) {
         0f
@@ -228,7 +217,7 @@ fun MetroLyricsLine(
         horizontalAlignment = agentAlignment
     ) {
         val wordList = entry.words
-        val effectiveWords: List<MetroWordTimestamp> = if (wordList != null && wordList.isNotEmpty() && (!showRomanized || !romanizeAsMain || !isRomanizedAvailable || mainText == entry.text)) {
+        val effectiveWords: List<MetroWordTimestamp> = if (wordList != null && wordList.isNotEmpty() && true) {
             entry.wordsWithSpacing().mapIndexed { idx, word ->
                 MetroWordTimestamp(
                     text = word.text.trimEnd(),
@@ -279,35 +268,7 @@ fun MetroLyricsLine(
             )
         }
 
-        if (subText != null) {
-            Text(
-                    fontFamily = fontFamily,
-                text = subText,
-                fontSize = 18.sp,
-                color = baseLineColor.copy(alpha = 0.6f),
-                textAlign = agentTextAlign,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(top = 2.dp).fillMaxWidth(),
-                lineHeight = (18 * lyricsLineSpacing.coerceAtMost(1.3f)).sp
-            )
-        }
 
-        if (showTranslated) {
-            val translatedText by entry.translatedTextFlow.collectAsStateWithLifecycle()
-            translatedText?.let { translated ->
-                Text(
-                    fontFamily = fontFamily,
-                    text = translated,
-                    fontSize = 16.sp,
-                    color = expressiveAccent.copy(alpha = 0.8f),
-                    textAlign = agentTextAlign,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = (16 * -0.012f).sp,
-                    modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
-                    lineHeight = (16 * lyricsLineSpacing.coerceAtMost(1.3f)).sp
-                )
-            }
-        }
     }
 }
 

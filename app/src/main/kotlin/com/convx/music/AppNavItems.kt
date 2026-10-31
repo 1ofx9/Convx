@@ -18,7 +18,6 @@ val LocalLocalOnlyMode = androidx.compose.runtime.staticCompositionLocalOf { tru
 /** Destinations shown by the app's navigation bars. */
 @Stable
 class AppNavItems(
-    val listenTogetherInTopBar: Boolean,
     val localOnlyMode: Boolean,
     val navigationItems: List<Screens>,
     val floatingNavigationItems: List<Screens>,
@@ -33,7 +32,7 @@ fun rememberAppNavItems(): AppNavItems {
     val localOnlyMode = true
     val navigationItems = remember(hiddenRoutes) {
         val screens = Screens.mainScreens(true)
-        val visible = screens.filter { it != Screens.ListenTogether && it != Screens.Radio && it != Screens.Explore }
+        val visible = screens.filter { it != Screens.Radio && it != Screens.Explore }
         visible.filter { it == Screens.Search || it.route !in hiddenRoutes }
     }
     val floatingNavigationItems = remember(navigationItems) {
@@ -41,7 +40,6 @@ fun rememberAppNavItems(): AppNavItems {
     }
     return remember(navigationItems, floatingNavigationItems) {
         AppNavItems(
-            listenTogetherInTopBar = false,
             localOnlyMode = localOnlyMode,
             navigationItems = navigationItems,
             floatingNavigationItems = floatingNavigationItems,

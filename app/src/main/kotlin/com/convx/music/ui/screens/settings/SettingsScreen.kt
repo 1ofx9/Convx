@@ -89,8 +89,8 @@ private val statsLink = SettingsLink("Stats", R.drawable.stats, { systemYellow }
 
 /** The root, grouped the way the categories are read: what you hear, what you see, your stuff. */
 private val rootGroups = listOf(
-    listOf(SettingsHubs.player.asLink(), SettingsHubs.playback.asLink(), SettingsHubs.appearance.asLink()),
     listOf(SettingsHubs.library.asLink()),
+    listOf(SettingsHubs.player.asLink(), SettingsHubs.playback.asLink(), SettingsHubs.appearance.asLink()),
     listOf(SettingsHubs.privacy.asLink(), historyLink, statsLink),
 )
 
@@ -125,10 +125,7 @@ fun SettingsScreen(
                 item("profile") {
                     ProfileCard { navController.navigate("settings/network_storage") }
                 }
-                if (query.isBlank()) item("localOnly") {
-                    Spacer(Modifier.height(20.dp))
-                    LocalOnlyRow()
-                }
+
                 if (query.isBlank()) {
                     rootGroups.forEachIndexed { i, links ->
                         item("group$i") {
@@ -246,48 +243,6 @@ private fun SearchResults(entries: List<SearchEntry>, query: String, onAction: (
     )
 }
 
-/** Active self-hosted playback indicator. */
-@Composable
-private fun LocalOnlyRow() {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clip(ContinuousRoundedRectangle(IosMetrics.GroupedCornerRadius))
-            .background(IosTheme.colors.secondarySystemGroupedBackground)
-            .defaultMinSize(minHeight = 56.dp)
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            Modifier.size(30.dp).clip(ContinuousRoundedRectangle(7.dp)).background(IosTheme.colors.systemGreen),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(painterResource(R.drawable.music_note), null, tint = Color.White, modifier = Modifier.size(18.dp))
-        }
-        Spacer(Modifier.width(14.dp))
-        Column(Modifier.weight(1f)) {
-            Text("Lossless Self-Hosted Engine", style = IosTheme.typography.body, color = IosTheme.colors.label)
-            Text(
-                "Streaming bit-perfect audio from Navidrome & local storage",
-                style = IosTheme.typography.footnote,
-                color = IosTheme.colors.secondaryLabel,
-            )
-        }
-        Box(
-            Modifier
-                .clip(ContinuousCapsule())
-                .background(IosTheme.colors.systemGreen.copy(alpha = 0.15f))
-                .padding(horizontal = 10.dp, vertical = 4.dp),
-        ) {
-            Text(
-                "ACTIVE",
-                style = IosTheme.typography.caption2,
-                fontWeight = FontWeight.Bold,
-                color = IosTheme.colors.systemGreen,
-            )
-        }
-    }
-}
 
 @Composable
 private fun ProfileCard(onClick: () -> Unit) {
@@ -316,14 +271,14 @@ private fun ProfileCard(onClick: () -> Unit) {
         }
         Column(Modifier.weight(1f).padding(start = 16.dp)) {
             Text(
-                "Navidrome & Network Storage",
+                "Navidrome Server",
                 style = IosTheme.typography.title3,
                 fontWeight = FontWeight.SemiBold,
                 color = IosTheme.colors.label,
                 maxLines = 1,
             )
             Text(
-                "Configure servers, sync playlists & scan library",
+                "Manage servers, sync songs & playlists",
                 style = IosTheme.typography.footnote,
                 color = IosTheme.colors.secondaryLabel,
                 maxLines = 1,

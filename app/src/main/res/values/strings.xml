@@ -7,12 +7,7 @@
 <!-- Translators: Do not modify this file for translations, use the reference app's Weblate instead. -->
 
 <resources>
-    <string name="song_insight_title">Track insights</string>
-    <string name="song_insight_disclosure">Uses track metadata sent to your configured AI provider. Suggestions may be inaccurate. Audio is not uploaded or measured.</string>
-    <string name="song_insight_error">Could not create an overview. Check your connection, provider settings and selected track, then try again.</string>
-    <string name="song_insight_configure">Set up an AI provider and API key in Settings to create an overview.</string>
-    <string name="song_insight_generate">Create overview</string>
-    <string name="song_insight_retry">Create again</string>
+
     <string name="widget_open_app">Tap to open your music</string>
     <string name="eq_import_description">Choose a ParametricEQ .txt preset</string>
     <string name="eq_import_progress">Importing preset…</string>

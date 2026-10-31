@@ -64,7 +64,6 @@ import com.music.innertube.YouTube
 import com.music.innertube.models.SongItem
 import com.convx.music.LocalDatabase
 import com.convx.music.LocalDownloadUtil
-import com.convx.music.LocalListenTogetherManager
 import com.convx.music.LocalPlayerConnection
 import com.convx.music.LocalSyncUtils
 import com.convx.music.R
@@ -110,8 +109,7 @@ fun YouTubeSongMenu(
     val download by LocalDownloadUtil.current.get().getDownload(song.id).collectAsState(initial = null)
     val coroutineScope = rememberCoroutineScope()
     val syncUtils = LocalSyncUtils.current.get()
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val isPinned by database.speedDialDao.isPinned(song.id).collectAsState(initial = false)
+        val isPinned by database.speedDialDao.isPinned(song.id).collectAsState(initial = false)
     val artists = remember(song.artists) {
         song.artists.mapNotNull {
             it.id?.let { artistId ->
@@ -251,7 +249,7 @@ fun YouTubeSongMenu(
     val configuration = LocalConfiguration.current
     val isPortrait = configuration.orientation == Configuration.ORIENTATION_PORTRAIT
 
-    val isGuest = listenTogetherManager?.isInRoom == true && !listenTogetherManager.isHost
+    val isGuest = false
 
     LazyColumn(
         contentPadding = PaddingValues(
@@ -309,27 +307,7 @@ fun YouTubeSongMenu(
         item {
             IosMenuGroup(
                 items = listOfNotNull(
-                    if (listenTogetherManager != null && listenTogetherManager.isInRoom && !listenTogetherManager.isHost) {
-                        IosMenuItemData(
-                            title = { Text(text = stringResource(R.string.suggest_to_host)) },
-                            icon = {
-                                SymbolIcon(symbol = sf("music.note.list"), contentDescription = null)
-                            },
-                            onClick = {
-                                val durationMs = song.duration?.takeIf { it > 0 }?.times(1000L) ?: 180000L
-                                val trackInfo = com.convx.music.listentogether.TrackInfo(
-                                    id = song.id,
-                                    title = song.title,
-                                    artist = artists.joinToString(", ") { it.name },
-                                    album = song.album?.name,
-                                    duration = durationMs,
-                                    thumbnail = song.thumbnail
-                                )
-                                listenTogetherManager.suggestTrack(trackInfo)
-                                onDismiss()
-                            }
-                        )
-                    } else null,
+                    null,
                     if (!isGuest) {
                         IosMenuItemData(
                             title = { Text(text = stringResource(R.string.start_radio)) },

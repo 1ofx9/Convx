@@ -120,7 +120,6 @@ import com.convx.music.ui.component.AppFloatingNowPlayingPill
 import com.convx.music.ui.component.AppFloatingSideBar
 import com.convx.music.ui.component.BottomSheetPage
 import com.convx.music.ui.component.FloatingMiniPlayerWidthFraction
-import com.convx.music.ui.component.ListenTogetherOverlay
 import com.convx.music.ui.component.LocalAppBackdrop
 import com.convx.music.ui.component.LocalAppBackdropFrozen
 import com.convx.music.ui.component.LocalAppMotionFrozen
@@ -287,7 +286,6 @@ internal fun AppRootContent(
             val (previousTab, setPreviousTab) = rememberSaveable { mutableStateOf("home") }
 
             val navItems = rememberAppNavItems()
-            val listenTogetherInTopBar = navItems.listenTogetherInTopBar
             val localOnlyMode = navItems.localOnlyMode
             val navigationItems = navItems.navigationItems
             val (slimNav) = rememberPreference(SlimNavBarKey, defaultValue = false)
@@ -363,7 +361,6 @@ internal fun AppRootContent(
                     Screens.Radio.route,
                     Screens.Songs.route,
                     Screens.Explore.route,
-                    Screens.ListenTogether.route,
                     "settings",
                 )
             }
@@ -691,7 +688,6 @@ internal fun AppRootContent(
                     Screens.Library.route -> com.convx.music.R.string.filter_library
                     Screens.Radio.route -> com.convx.music.R.string.radio
                     Screens.Songs.route -> com.convx.music.R.string.songs
-                    Screens.ListenTogether.route -> com.convx.music.R.string.together
                     Screens.Explore.route -> com.convx.music.R.string.tab_explore
                     else -> null
                 }
@@ -751,8 +747,6 @@ internal fun AppRootContent(
                 LocalDownloadUtil provides downloadUtil,
                 LocalShimmerTheme provides ShimmerTheme,
                 LocalSyncUtils provides syncUtils,
-                // Disable Listen Together until ready; current entry points handle a missing manager.
-                LocalListenTogetherManager provides null,
                 LocalGlassEffectConfig provides glassEffectConfig,
                 com.convx.music.ui.theme.LocalDarkGlassEffectConfig provides darkGlassEffectConfig,
                 LocalAppleMusicUi provides appleMusicUi,
@@ -951,7 +945,7 @@ internal fun AppRootContent(
                             // Sidebar sections include phone top-bar items and playlists with bookmarkedAt set.
                             val sidebarSections = rememberSideBarSections(
                                 database, showHistoryButton, showStatsButton,
-                                listenTogetherInTopBar, navController, onLibraryFilterChange,
+                                navController, onLibraryFilterChange,
                             )
 
                             val railItems = listOf(Screens.Search, Screens.Home) +
@@ -1267,12 +1261,6 @@ internal fun AppRootContent(
                     liquidGlassPlayerMode = playerBackgroundStyle == PlayerBackgroundStyle.GLASS,
                 )
                 }
-
-                // Show join requests at the app root; the host may be on another screen.
-                ListenTogetherOverlay(
-                    manager = LocalListenTogetherManager.current,
-                    playerConnection = playerConnection,
-                )
 
                 // Queue actions share one entry point, so host the conflict prompt here.
                 QueueConflictDialog(playerConnection = playerConnection)

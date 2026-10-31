@@ -46,6 +46,7 @@ object LocalAudioScanner {
         database: MusicDatabase,
     ): ScanResult =
         withContext(Dispatchers.IO) {
+            return@withContext ScanResult(0, 0, 0)
             var totalFound = 0
             var newSongs = 0
             var skippedExisting = 0

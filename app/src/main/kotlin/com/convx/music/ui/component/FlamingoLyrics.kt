@@ -7,8 +7,6 @@ import com.convx.music.lyrics.LyricsEntry
 import com.convx.music.lyrics.wordsWithSpacing
 import com.convx.music.lyrics.primaryLyricLineIndex
 import com.convx.music.ui.component.flamingo.*
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.flow.combine
 
 /** Adapts persisted timing and text to the scrolling word renderer. */
 @Composable
@@ -17,7 +15,6 @@ fun FlamingoLyrics(
     fontFamily: androidx.compose.ui.text.font.FontFamily = androidx.compose.ui.text.font.FontFamily.Default,
     fontSize: Float = 30f,
     lineSpacing: Float = 1.3f,
-    showTranslation: Boolean = false,
     positionMs: () -> Long,
     useBlur: Boolean,
     isSynced: Boolean = true,
@@ -45,10 +42,7 @@ fun FlamingoLyrics(
         }
     }
     val sides = remember(lines) { lines.map { it.agent == "v2" } }
-    val subtitles by remember(lines) { combine(lines.map { it.translatedTextFlow }) { it.toList() } }
-        .collectAsStateWithLifecycle(initialValue = emptyList())
-    val transliterations by remember(lines) { combine(lines.map { it.romanizedTextFlow }) { it.toList() } }
-        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val emptyStringList = remember { emptyList<String>() }
     val wordTimed = remember(lines) { lines.any { !it.words.isNullOrEmpty() } }
     val current = remember(lines, isSynced) { mutableIntStateOf(if (isSynced) primaryLyricLineIndex(lines, positionMs()) else -1) }
     val playhead by rememberUpdatedState(positionMs)
@@ -64,14 +58,14 @@ fun FlamingoLyrics(
         YosLyricView(
             lrcEntriesLambda = { entries },
             lineEndTimesLambda = { ends },
-            lineSubtitlesLambda = { subtitles },
-            lineTransliterationsLambda = { transliterations },
+            lineSubtitlesLambda = { emptyStringList },
+            lineTransliterationsLambda = { emptyStringList },
             isTtmlLyricsLambda = { wordTimed },
             liveTimeLambda = { positionMs().coerceIn(0, Int.MAX_VALUE.toLong()).toInt() },
             mediaEvent = remember(onSeek) { object : YosMediaEvent {
                 override fun onSeek(position: Int) = onSeek(position)
             } },
-            translationLambda = { showTranslation },
+            translationLambda = { false },
             blurLambda = { useBlur && isSynced },
             isSynced = isSynced,
             autoScrollEnabled = autoScrollEnabled,

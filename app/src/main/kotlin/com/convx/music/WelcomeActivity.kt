@@ -132,6 +132,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.convx.music.viewmodels.NetworkStorageViewModel
+import com.convx.storage.domain.NetworkProtocol
+import com.convx.music.ui.ios.compat.CircularProgressIndicator
+import com.convx.music.ui.ios.compat.OutlinedTextField
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.convx.music.constants.IsFirstRunKey
 import com.convx.music.ui.theme.ConvxTheme
 import com.convx.music.ui.utils.safeOpenUri
@@ -146,6 +153,7 @@ data class OnboardingPageInfo(
     val content: @Composable (onUpdateScrollState: (Boolean) -> Unit) -> Unit
 )
 
+@dagger.hilt.android.AndroidEntryPoint
 class WelcomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -207,6 +215,19 @@ val GoogleSansFlex = FontFamily(
 @OptIn(ExperimentalTextApi::class)
 @Composable
 fun WelcomePagerScreen(onFinished: () -> Unit) {
+    val storageViewModel: NetworkStorageViewModel = hiltViewModel()
+    val servers by storageViewModel.servers.collectAsStateWithLifecycle()
+    val busyId by storageViewModel.busyId.collectAsStateWithLifecycle()
+    val serverStatus by storageViewModel.status.collectAsStateWithLifecycle()
+
+    var serverUrl by remember { mutableStateOf("") }
+    var serverName by remember { mutableStateOf("Navidrome") }
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        storageViewModel.load()
+    }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val commonAnimSpec = tween<Float>(durationMillis = 200, easing = FastOutSlowInEasing)
@@ -300,7 +321,7 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    Spacer(modifier = Modifier.height(80.dp))
+                    Spacer(modifier = Modifier.height(70.dp))
 
                     Text(
                         text = stringResource(com.convx.music.R.string.welcome_to),
@@ -350,13 +371,13 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         RotatingShapeContainer(
-                            modifier = Modifier.size(280.dp)
+                            modifier = Modifier.size(260.dp)
                         )
 
-                        Spacer(modifier = Modifier.height(32.dp))
+                        Spacer(modifier = Modifier.height(28.dp))
 
                         Text(
-                            text = "Bit-perfect streaming from your Navidrome server and pristine playback of local audio files with fluid Cupertino Liquid Glass.",
+                            text = "Bit-perfect streaming from your personal Navidrome server with Apple Music style synced lyrics and fluid Cupertino glass.",
                             fontFamily = GoogleSansFlex,
                             style = AppTheme.typography.bodyLarge,
                             color = AppTheme.colorScheme.onSurfaceVariant,
@@ -373,15 +394,15 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    Spacer(modifier = Modifier.height(80.dp))
+                    Spacer(modifier = Modifier.height(60.dp))
 
                     Text(
-                        text = stringResource(com.convx.music.R.string.perm_required),
+                        text = "Connect Your",
                         style = thinHeaderStyle,
                         color = AppTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = stringResource(com.convx.music.R.string.perm_permissions),
+                        text = "SERVER",
                         fontFamily = GoogleSansFlex,
                         fontWeight = FontWeight.Bold,
                         fontSize = 48.sp,
@@ -389,106 +410,122 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                         lineHeight = 56.sp
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
-                        text = "Convx operates completely private and offline. We only request permissions necessary to read your audio library and display playback controls.",
-                        style = AppTheme.typography.bodyLarge.copy(
+                        text = "Connect your Navidrome or Subsonic server to stream your lossless library anywhere.",
+                        style = AppTheme.typography.bodyMedium.copy(
                             fontFamily = GoogleSansFlex
                         ),
                         color = AppTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        PermissionCard(
-                            icon = painterResource(com.convx.music.R.drawable.library_music_filled),
-                            iconColor = Color(0xFF80da88),
-                            iconTint = Color(0xFF00522c),
-                            title = "Music Library Access",
-                            description = "Required to scan, index, and play your local audio files with zero quality loss.",
-                            shape = topCardShape,
-                            control = {
-                                Switch(
-                                    checked = hasAudioPermission,
-                                    onCheckedChange = {
-                                        if (hasAudioPermission) {
-                                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                                data = Uri.parse("package:${context.packageName}")
-                                            }
-                                            context.startActivity(intent)
-                                        } else {
-                                            audioPermissionLauncher.launch(audioPermission)
-                                        }
-                                    }
-                                )
-                            },
-                            onClick = {
-                                if (hasAudioPermission) {
-                                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                        data = Uri.parse("package:${context.packageName}")
-                                    }
-                                    context.startActivity(intent)
-                                } else {
-                                    audioPermissionLauncher.launch(audioPermission)
-                                }
-                            }
+                        OutlinedTextField(
+                            value = serverUrl,
+                            onValueChange = { serverUrl = it },
+                            label = { Text("Server URL") },
+                            placeholder = { Text("https://music.example.com") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
                         )
 
-                        Spacer(modifier = Modifier.height(2.dp))
-
-                        PermissionCard(
-                            icon = rememberVectorPainter(Icons.Rounded.Notifications),
-                            iconColor = Color(0xFFffaee4),
-                            iconTint = Color(0xFF8d0053),
-                            title = stringResource(com.convx.music.R.string.perm_notif_title),
-                            description = stringResource(com.convx.music.R.string.perm_notif_desc),
-                            shape = bottomCardShape,
-                            control = {
-                                Switch(
-                                    checked = hasNotificationPermission,
-                                    onCheckedChange = {
-                                        if (hasNotificationPermission) {
-                                            val intent =
-                                                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                                    putExtra(
-                                                        Settings.EXTRA_APP_PACKAGE,
-                                                        context.packageName
-                                                    )
-                                                }
-                                            context.startActivity(intent)
-                                        } else {
-                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                                notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                            }
-                                        }
-                                    }
-                                )
-                            },
-                            onClick = {
-                                if (hasNotificationPermission) {
-                                    val intent =
-                                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                            putExtra(
-                                                Settings.EXTRA_APP_PACKAGE,
-                                                context.packageName
-                                            )
-                                        }
-                                    context.startActivity(intent)
-                                } else {
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                        notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                    }
-                                }
-                            }
+                        OutlinedTextField(
+                            value = serverName,
+                            onValueChange = { serverName = it },
+                            label = { Text("Server Name") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
                         )
 
-                        Spacer(modifier = Modifier.height(100.dp))
+                        OutlinedTextField(
+                            value = username,
+                            onValueChange = { username = it },
+                            label = { Text("Username") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = { Text("Password") },
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Button(
+                            onClick = {
+                                storageViewModel.add(
+                                    NetworkProtocol.NAVIDROME,
+                                    serverName.trim().ifEmpty { "Navidrome" },
+                                    serverUrl.trim(),
+                                    username.trim(),
+                                    password,
+                                    ""
+                                )
+                            },
+                            enabled = busyId == null && serverUrl.isNotBlank() && username.isNotBlank(),
+                            modifier = Modifier.fillMaxWidth().height(48.dp)
+                        ) {
+                            if (busyId != null) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    strokeWidth = 2.dp,
+                                    color = AppTheme.colorScheme.onPrimary
+                                )
+                                Spacer(Modifier.width(8.dp))
+                            }
+                            Text(if (servers.isNotEmpty()) "Connected • Tap to Re-Test" else "Test & Connect")
+                        }
+
+                        if (serverStatus != null) {
+                            Text(
+                                text = serverStatus.orEmpty(),
+                                style = AppTheme.typography.bodySmall,
+                                color = if (serverStatus?.contains("OK", ignoreCase = true) == true || serverStatus?.contains("saved", ignoreCase = true) == true) Color(0xFF4CAF50) else AppTheme.colorScheme.error,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                            )
+                        }
+
+                        if (servers.isNotEmpty()) {
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = Color(0xFF4CAF50).copy(alpha = 0.15f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.CheckCircle,
+                                        contentDescription = null,
+                                        tint = Color(0xFF4CAF50),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Spacer(Modifier.width(10.dp))
+                                    Text(
+                                        text = "Server connected: ${servers.firstOrNull()?.name.orEmpty()}",
+                                        style = AppTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFF4CAF50)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(60.dp))
                     }
                 }
             }
@@ -499,7 +536,7 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    Spacer(modifier = Modifier.height(80.dp))
+                    Spacer(modifier = Modifier.height(70.dp))
 
                     Text(
                         text = "Ready to",
@@ -515,17 +552,17 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                         lineHeight = 56.sp
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = "Your library is ready. Connect your Navidrome server or browse local high-resolution audio files.",
+                        text = "Convx is ready to stream your music in pristine lossless quality.",
                         style = AppTheme.typography.bodyLarge.copy(
                             fontFamily = GoogleSansFlex
                         ),
                         color = AppTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     Column(
                         modifier = Modifier
@@ -536,19 +573,19 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                             icon = painterResource(com.convx.music.R.drawable.cloud),
                             iconColor = Color(0xFF67d4ff),
                             iconTint = Color(0xFF004e5d),
-                            title = "Self-Hosted Streaming",
-                            description = "Lossless direct FLAC streaming from your personal Navidrome / Subsonic server with synced lyrics.",
+                            title = "Bit-Perfect Lossless Audio",
+                            description = "Direct raw FLAC streaming straight from your server into the audio sink without resamplers.",
                             shape = topCardShape
                         )
 
                         Spacer(modifier = Modifier.height(2.dp))
 
                         FeatureCard(
-                            icon = painterResource(com.convx.music.R.drawable.storage),
-                            iconColor = Color(0xFF80da88),
-                            iconTint = Color(0xFF00522c),
-                            title = "Local Music Storage",
-                            description = "Zero latency, pristine bit-perfect playback from your device's audio folders.",
+                            icon = painterResource(com.convx.music.R.drawable.lyrics),
+                            iconColor = Color(0xFFffaee4),
+                            iconTint = Color(0xFF8d0053),
+                            title = "Apple Music Synced Lyrics",
+                            description = "Fluid word-by-word synchronized animations without distractions.",
                             shape = middleCardShape
                         )
 
@@ -556,14 +593,37 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
 
                         FeatureCard(
                             icon = painterResource(com.convx.music.R.drawable.security),
-                            iconColor = Color(0xFFb6c6ed),
-                            iconTint = Color(0xFF001b3f),
-                            title = "Private & Bit-Perfect",
-                            description = "No telemetry, no tracking, no external ads. Pure music on your terms.",
+                            iconColor = Color(0xFF80da88),
+                            iconTint = Color(0xFF00522c),
+                            title = "100% Private & Self-Hosted",
+                            description = "Zero telemetry, zero ads, zero tracking. Your personal cloud player.",
                             shape = bottomCardShape
                         )
 
-                        Spacer(modifier = Modifier.height(100.dp))
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            PermissionCard(
+                                icon = rememberVectorPainter(Icons.Rounded.Notifications),
+                                iconColor = Color(0xFFffaee4),
+                                iconTint = Color(0xFF8d0053),
+                                title = "Media Playback Notification",
+                                description = "Allows playback controls in your notification shade and lock screen.",
+                                shape = RoundedCornerShape(16.dp),
+                                control = {
+                                    Switch(
+                                        checked = hasNotificationPermission,
+                                        onCheckedChange = {
+                                            notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                        }
+                                    )
+                                },
+                                onClick = {
+                                    notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(80.dp))
                     }
                 }
             }

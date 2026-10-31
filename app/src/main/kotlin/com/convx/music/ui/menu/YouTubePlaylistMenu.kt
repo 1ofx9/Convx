@@ -60,7 +60,6 @@ import com.music.innertube.models.SongItem
 import com.music.innertube.utils.completed
 import com.convx.music.LocalDatabase
 import com.convx.music.LocalDownloadUtil
-import com.convx.music.LocalListenTogetherManager
 import com.convx.music.LocalPlayerConnection
 import com.convx.music.R
 import com.convx.music.constants.ListThumbnailSize
@@ -109,8 +108,7 @@ fun YouTubePlaylistMenu(
     val database = LocalDatabase.current.get()
     val downloadUtil = LocalDownloadUtil.current.get()
     val playerConnection = LocalPlayerConnection.current ?: return
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val isGuest = listenTogetherManager?.isInRoom == true && !listenTogetherManager.isHost
+    val isGuest = false
     val dbPlaylist by database.playlistByBrowseId(playlist.id).collectAsState(initial = null)
     val currentPlaylist = dbPlaylist?.playlist
     val isPlaylistLiked = currentPlaylist?.bookmarkedAt != null

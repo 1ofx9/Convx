@@ -12,12 +12,9 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -26,10 +23,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.convx.music.LocalPlayerAwareWindowInsets
-import com.convx.music.R
 import com.convx.music.ui.utils.isScrollingUp
 import dev.chrisbanes.haze.HazeState
 
@@ -40,15 +35,13 @@ fun BoxScope.HideOnScrollFAB(
     lazyListState: LazyListState,
     @DrawableRes icon: Int,
     onClick: () -> Unit,
-    onRecognitionClick: (() -> Unit)? = null,
     hazeState: HazeState? = null,
 ) {
     AnimatedVisibility(
         visible = visible && lazyListState.isScrollingUp(),
         enter = slideInVertically { it },
         exit = slideOutVertically { it },
-        modifier =
-        Modifier
+        modifier = Modifier
             .align(Alignment.BottomEnd)
             .windowInsetsPadding(
                 LocalPlayerAwareWindowInsets.current
@@ -57,20 +50,8 @@ fun BoxScope.HideOnScrollFAB(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
-            if (onRecognitionClick != null) {
-                GlassCircleButton(
-                    onClick = onRecognitionClick,
-                    hazeState = hazeState,
-                    // Keep this frequently shown action flat to avoid backdrop sampling
-                    // from inside its own capture.
-                    forceFlat = true,
-                ) {
-                    SymbolIcon(symbol = sf("mic.fill"), contentDescription = stringResource(R.string.recognize_music), size = 20.dp)
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-            }
             GlassCircleButton(
                 onClick = onClick,
                 size = 56.dp,
@@ -92,15 +73,13 @@ fun BoxScope.HideOnScrollFAB(
     lazyListState: LazyGridState,
     @DrawableRes icon: Int,
     onClick: () -> Unit,
-    onRecognitionClick: (() -> Unit)? = null,
     hazeState: HazeState? = null,
 ) {
     AnimatedVisibility(
         visible = visible && lazyListState.isScrollingUp(),
         enter = slideInVertically { it },
         exit = slideOutVertically { it },
-        modifier =
-        Modifier
+        modifier = Modifier
             .align(Alignment.BottomEnd)
             .windowInsetsPadding(
                 LocalPlayerAwareWindowInsets.current
@@ -109,19 +88,8 @@ fun BoxScope.HideOnScrollFAB(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
-            if (onRecognitionClick != null) {
-                GlassCircleButton(
-                    onClick = onRecognitionClick,
-                    hazeState = hazeState,
-                    // Sacrifice: always flat — see LazyList overload comment.
-                    forceFlat = true,
-                ) {
-                    SymbolIcon(symbol = sf("mic.fill"), contentDescription = stringResource(R.string.recognize_music), size = 20.dp)
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-            }
             GlassCircleButton(
                 onClick = onClick,
                 size = 56.dp,
@@ -143,15 +111,13 @@ fun BoxScope.HideOnScrollFAB(
     scrollState: ScrollState,
     @DrawableRes icon: Int,
     onClick: () -> Unit,
-    onRecognitionClick: (() -> Unit)? = null,
     hazeState: HazeState? = null,
 ) {
     AnimatedVisibility(
         visible = visible && scrollState.isScrollingUp(),
         enter = slideInVertically { it },
         exit = slideOutVertically { it },
-        modifier =
-        Modifier
+        modifier = Modifier
             .align(Alignment.BottomEnd)
             .windowInsetsPadding(
                 LocalPlayerAwareWindowInsets.current
@@ -160,19 +126,8 @@ fun BoxScope.HideOnScrollFAB(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
-            if (onRecognitionClick != null) {
-                GlassCircleButton(
-                    onClick = onRecognitionClick,
-                    hazeState = hazeState,
-                    // Sacrifice: always flat — see LazyList overload comment.
-                    forceFlat = true,
-                ) {
-                    SymbolIcon(symbol = sf("mic.fill"), contentDescription = stringResource(R.string.recognize_music), size = 20.dp)
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-            }
             GlassCircleButton(
                 onClick = onClick,
                 size = 56.dp,

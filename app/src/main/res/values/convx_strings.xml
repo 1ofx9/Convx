@@ -417,29 +417,6 @@
     <string name="crossfade_beta_title">Beta Feature</string>
     <string name="crossfade_beta_message">Crossfade is a new feature and may have bugs. If you experience any issues, please report them.\n\nThis feature disables audio offload due to technical limitations.</string>
 
-    <!-- Romanization Settings -->
-    <string name="lyrics_romanization_cyrillic">Cyrillic</string>
-    <string name="lyrics_romanize_title">Romanization</string>
-    <string name="lyrics_romanization">Lyrics romanization</string>
-    <string name="romanization">Romanization</string>
-    <string name="lyrics_romanize_japanese">Romanize Japanese lyrics</string>
-    <string name="lyrics_romanize_korean">Romanize Korean lyrics</string>
-    <string name="lyrics_romanize_chinese">Romanize Chinese lyrics</string>
-    <string name="lyrics_romanize_hindi">Romanize Hindi lyrics</string>
-    <string name="lyrics_romanize_punjabi">Romanize Punjabi lyrics</string>
-    <string name="lyrics_romanize_russian">Romanize Russian lyrics</string>
-    <string name="lyrics_romanize_ukrainian">Romanize Ukrainian lyrics</string>
-    <string name="lyrics_romanize_belarusian">Romanize Belarusian lyrics</string>
-    <string name="lyrics_romanize_kyrgyz">Romanize Kyrgyz lyrics</string>
-    <string name="lyrics_romanize_serbian">Romanize Serbian lyrics</string>
-    <string name="lyrics_romanize_bulgarian">Romanize Bulgarian lyrics</string>
-    <string name="line_by_line_option_title">EXPERIMENTAL: Detect language line by line</string>
-    <string name="line_by_line_option_desc">The Cyrillic language will be detected line by line instead of the entire song.</string>
-    <string name="line_by_line_dialog_title">Are you sure?</string>
-    <string name="line_by_line_dialog_desc">This is a hit or miss experimental feature. \n\nBy default, language is determined from the whole song, but with this option on, it will be determined line by line instead. This will allow multi-language songs to work BUT the language might not always be correct (for example if there is a Ukrainian lyric that doesn\'t contain any Ukrainian-specific letters, it might be romanized as Russian instead). \n\nIf you do not have issues, it is recommended to keep this option off.</string>
-    <string name="line_by_line_dialog_enable">Enable</string>
-    <string name="romanize_current_track">Romanize current track</string>
-
     <!-- Lyrics Offset Settings -->
     <string name="lyrics_offset">Lyrics Offset</string>
 
@@ -478,8 +455,7 @@
     <string name="google_cast">Google Cast</string>
     <string name="google_cast_description">Enable casting audio to Chromecast and other Cast-enabled devices</string>
 
-    <string name="lyrics_romanize_macedonian">Romanize Macedonian lyrics</string>
-    <string name="lyrics_romanize_as_main">Show romanized lyrics as main</string>
+
 
     <string name="integrations">Integrations</string>
     <string name="username">Username</string>
@@ -522,10 +498,7 @@
     <!-- Ambient Mode -->
     <string name="ambient_mode">Ambient Mode</string>
 
-    <!-- AI Playlist Modify -->
-    <string name="modify_with_ai">Modify with AI</string>
-    <string name="modify_with_ai_desc">Modify playlist using AI instructions</string>
-    <string name="ai_modify_prompt_hint">e.g., Remove sad songs, add some 90s hits</string>
+
 
     <string name="details_desc">View the song\'s information</string>
     <string name="edit_desc">Change the title or artist</string>
@@ -860,73 +833,6 @@
     <string name="listen_together_no_blocked_users">No blocked users</string>
     <string name="unblock">Unblock</string>
     <string name="user_blocked_by_host">User blocked by host</string>
-
-    <!-- AI Lyrics Translation -->
-    <string name="ai_lyrics_translation">AI Lyrics Translation</string>
-    <string name="ai_translating_lyrics">Translating lyrics...</string>
-    <string name="ai_lyrics_translated">Lyrics translated</string>
-    <string name="ai_provider">Provider</string>
-    <string name="ai_base_url">Base URL</string>
-    <string name="ai_api_key">API Key</string>
-    <string name="ai_model">Model</string>
-    <string name="ai_translation_mode">Translation Mode</string>
-    <string name="ai_target_language">Target Language</string>
-    <string name="ai_setup_guide">API Credentials</string>
-    <string name="ai_translation_literal">Translation</string>
-    <string name="ai_translation_literal_desc">Translate meaning to target language</string>
-    <string name="ai_translation_transcribed">Transcription</string>
-    <string name="ai_translation_transcribed_desc">Convert pronunciation to target script</string>
-    <string name="ai_api_key_required">API Key Required</string>
-    <string name="ai_error_api_key_required">API key is required</string>
-    <string name="ai_error_no_lyrics">No lyrics to translate</string>
-    <string name="ai_error_lyrics_empty">Lyrics are empty</string>
-    <string name="ai_error_language_required">Target language is required</string>
-    <string name="ai_error_unexpected">Unexpected translation result</string>
-    <string name="ai_error_unknown">Unknown error occurred</string>
-    <string name="ai_error_translation_failed">Translation failed</string>
-    <string name="ai_provider_help">Get API Keys</string>
-    <string name="ai_provider_openrouter_help">Visit openrouter.ai for free and paid models</string>
-    <string name="ai_provider_mistral_help">Visit console.mistral.ai/api-keys</string>
-    <string name="ai_provider_openai_help">Visit platform.openai.com/api-keys</string>
-    <string name="ai_provider_claude_help">Visit console.anthropic.com/settings/keys</string>
-    <string name="ai_provider_gemini_help">Visit aistudio.google.com/apikey</string>
-    <string name="ai_provider_perplexity_help">Visit perplexity.ai/settings/api</string>
-    <string name="ai_provider_xai_help">Visit console.x.ai</string>
-    <string name="ai_provider_deepl_help">Visit deepl.com/pro-api for free and paid keys</string>
-    <string name="ai_provider_groq_help">Visit console.groq.com/keys — free tier, no card required</string>
-    <string name="ai_deepl_formality">Formality</string>
-    <string name="ai_deepl_formality_default">Default</string>
-    <string name="ai_deepl_formality_more">More Formal</string>
-    <string name="ai_deepl_formality_less">Less Formal</string>
-
-    <!-- AI DJ Mix -->
-    <string name="ai_dj_mix">AI DJ Mix</string>
-    <string name="ai_dj_mix_from_song">AI DJ Mix from this song</string>
-    <string name="ai_dj_mix_prompt_label">Vibe</string>
-    <string name="ai_dj_mix_prompt_hint">e.g. upbeat 30-minute workout mix</string>
-    <string name="ai_dj_mix_prompt_hint_seeded">Optional — leave blank to build from related songs only</string>
-    <string name="ai_dj_mix_based_on">Based on: %1$s</string>
-    <string name="ai_dj_mix_song_count_label">Songs</string>
-    <string name="ai_dj_mix_need_prompt_or_seed">Describe a vibe or start from a song to continue.</string>
-    <string name="ai_dj_mix_generate">Generate</string>
-    <string name="ai_dj_mix_starting">Starting…</string>
-    <string name="ai_dj_mix_failed">Couldn\'t build a set. Try again.</string>
-    <string name="ai_dj_mix_song_count">%1$d songs</string>
-    <string name="ai_dj_mix_unmatched_count">%1$d songs couldn\'t be found: %2$s</string>
-    <string name="ai_dj_mix_start_over">Start Over</string>
-    <string name="ai_dj_mix_open_playlist">Open Playlist</string>
-    <string name="ai_dj_mix_mode_songs">By song count</string>
-    <string name="ai_dj_mix_mode_duration">By duration</string>
-    <string name="ai_dj_mix_duration_label">Target length</string>
-    <string name="ai_dj_mix_duration_minutes">%1$d min</string>
-    <string name="ai_dj_mix_method">How this was built: %1$s</string>
-    <string name="ai_dj_mix_concert_mode_label">Concert mode</string>
-    <string name="ai_dj_mix_concert_mode_hint">Builds a set with an opener, rising energy, peak, and closer — like an actual live show</string>
-    <string name="ai_dj_mix_prompt_hint_concert">e.g. an artist, band, or genre for the set</string>
-    <string name="ai_dj_mix_play_now">Play Now</string>
-    <string name="ai_dj_mix_save_as_playlist">Save as Playlist</string>
-    <string name="ai_dj_mix_saving">Saving…</string>
-    <string name="ai_dj_mix_concert_mode_explore_subtitle">AI-designed live sets</string>
 
     <!-- Crash Handler -->
     <string name="crash_title">App Crashed</string>

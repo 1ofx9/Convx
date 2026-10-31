@@ -75,8 +75,7 @@ fun YouTubeSelectionSongMenu(
         mutableStateOf(false)
     }
 
-    val listenTogetherManager = com.convx.music.LocalListenTogetherManager.current
-    val isGuest = listenTogetherManager?.isInRoom == true && listenTogetherManager.isHost == false
+    val isGuest = false
 
     var showRemoveDownloadDialog by remember {
         mutableStateOf(false)

@@ -91,6 +91,7 @@ fun SettingsPage(
         actions = actions,
         scrollState = scrollState,
         largeTitle = settingsLargeTitle(title),
+        showTopBlur = false,
         content = {
             content()
             Spacer(Modifier.height(32.dp))
@@ -124,6 +125,7 @@ fun SettingsLazyPage(
         actions = actions,
         listState = listState,
         largeTitle = settingsLargeTitle(title),
+        showTopBlur = false,
         content = content,
     ) }
 }
@@ -147,6 +149,7 @@ fun SettingsScaffold(
     ScreenScaffold(
         title = title,
         titleAlpha = titleAlpha,
+        showTopBlur = false,
         titleAlphaProvider = titleAlphaProvider,
         onBack = onBack ?: { navController.navigateUp(); Unit },
         onBackLongClick = navController::backToMain,

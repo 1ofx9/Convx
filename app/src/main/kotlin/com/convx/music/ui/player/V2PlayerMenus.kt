@@ -155,10 +155,10 @@ fun V2OptionsMenu(
 @Composable
 fun V2GoToMenu(
     albumTitle: String?,
-    artistName: String?,
+    artists: List<com.convx.music.models.MediaMetadata.Artist>,
     onDismiss: () -> Unit,
     onGoToAlbum: (() -> Unit)?,
-    onGoToArtist: (() -> Unit)?,
+    onGoToArtist: (String) -> Unit,
 ) {
     V2MenuPopup(
         onDismiss = onDismiss,
@@ -170,12 +170,14 @@ fun V2GoToMenu(
                     icon = glyph(SfSymbols.Monochrome.SFSquareStack),
                     onClick = onGoToAlbum,
                 ))
-                if (onGoToArtist != null) add(IosMenuItem(
-                    title = stringResource(R.string.v2_menu_go_to_artist),
-                    description = artistName,
-                    icon = glyph(SfSymbols.Monochrome.SFMusicMicrophone),
-                    onClick = onGoToArtist,
-                ))
+                artists.filter { !it.id.isNullOrBlank() }.forEach { artist ->
+                    add(IosMenuItem(
+                        title = stringResource(R.string.v2_menu_go_to_artist),
+                        description = artist.name,
+                        icon = glyph(SfSymbols.Monochrome.SFMusicMicrophone),
+                        onClick = { onGoToArtist(artist.id!!) },
+                    ))
+                }
             }),
         ),
     )
@@ -238,7 +240,7 @@ fun V2OptionsMenuHost(
     if (showGoTo) {
         V2GoToMenu(
             albumTitle = mediaMetadata.album?.title,
-            artistName = mediaMetadata.artists.firstOrNull()?.name,
+            artists = mediaMetadata.artists,
             onDismiss = { showGoTo = false },
             onGoToAlbum = mediaMetadata.album?.let { album ->
                 {
@@ -246,11 +248,9 @@ fun V2OptionsMenuHost(
                     playerBottomSheetState.collapseSoft()
                 }
             },
-            onGoToArtist = mediaMetadata.artists.firstOrNull()?.id?.let { id ->
-                {
-                    navController.navigate("artist/$id")
-                    playerBottomSheetState.collapseSoft()
-                }
+            onGoToArtist = { id ->
+                navController.navigate("artist/$id")
+                playerBottomSheetState.collapseSoft()
             },
         )
     }
@@ -258,9 +258,7 @@ fun V2OptionsMenuHost(
         isVisible = showAddToPlaylist,
         onGetSong = { playlist ->
             database.transaction { insert(mediaMetadata) }
-            coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                playlist.playlist.browseId?.let { com.music.innertube.YouTube.addToPlaylist(it, mediaMetadata.id) }
-            }
+
             listOf(mediaMetadata.id)
         },
         onDismiss = { showAddToPlaylist = false },

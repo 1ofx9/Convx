@@ -64,25 +64,14 @@ import com.convx.music.ui.screens.playlist.TopPlaylistScreen
 import com.convx.music.ui.screens.search.OnlineSearchResult
 import com.convx.music.ui.screens.search.SearchScreen
 import com.convx.music.ui.screens.settings.AppearanceSettings
-import com.convx.music.ui.screens.settings.CanvasSelection
-import com.convx.music.ui.screens.settings.AppIconScreen
-import com.convx.music.ui.screens.settings.diy.DiyEditorScreen
-import com.convx.music.ui.screens.settings.diy.PlayerIconsScreen
-import com.convx.music.ui.screens.settings.diy.PresetsScreen
 import com.convx.music.ui.screens.settings.FontSelectionScreen
 import com.convx.music.ui.screens.settings.GlassEffectSettings
 import com.convx.music.ui.screens.settings.PlayerThemeScreen
-import com.convx.music.ui.screens.settings.BackupAndRestore
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.convx.music.ui.screens.settings.ContentSettings
 import com.convx.music.ui.screens.settings.PlayerSettings
 import com.convx.music.ui.screens.settings.PlayerAdvancedSettings
 import com.convx.music.ui.screens.settings.AppearanceAdvancedSettings
-import com.convx.music.ui.screens.settings.ContentAdvancedSettings
-import com.convx.music.ui.screens.settings.LocalFoldersSettingsScreen
-import com.convx.music.ui.screens.settings.ScanMusicScreen
 import com.convx.music.ui.screens.settings.PrivacySettings
-import com.convx.music.ui.screens.settings.RomanizationSettings
 import com.convx.music.ui.screens.settings.StorageSettings
 import com.convx.music.ui.screens.settings.ThemeScreen
 import com.convx.music.ui.screens.ambient.AmbientModeScreen
@@ -457,26 +446,6 @@ fun NavGraphBuilder.navigationBuilder(
         FontSelectionScreen(navController, scrollBehavior)
     }
 
-    sharedComposable("settings/appearance/appicon") {
-        AppIconScreen(navController, scrollBehavior)
-    }
-
-    sharedComposable("settings/appearance/presets") {
-        PresetsScreen(navController, scrollBehavior)
-    }
-
-    sharedComposable("settings/appearance/playericons") {
-        PlayerIconsScreen(navController, scrollBehavior)
-    }
-
-    sharedComposable("settings/appearance/diy") {
-        DiyEditorScreen(navController)
-    }
-
-    sharedComposable("settings/appearance/canvas") {
-        CanvasSelection(navController, scrollBehavior)
-    }
-
     sharedComposable("settings/appearance/playertheme") {
         PlayerThemeScreen(navController, scrollBehavior)
     }
@@ -489,13 +458,7 @@ fun NavGraphBuilder.navigationBuilder(
         GlassEffectSettings(navController, scrollBehavior, advanced = true)
     }
 
-    sharedComposable("settings/content") {
-        ContentSettings(navController, scrollBehavior)
-    }
 
-    sharedComposable("settings/content/advanced") {
-        ContentAdvancedSettings(navController, scrollBehavior)
-    }
 
     sharedComposable("settings/lyrics") {
         com.convx.music.ui.screens.settings.LyricsSettingsScreen(navController)
@@ -509,9 +472,7 @@ fun NavGraphBuilder.navigationBuilder(
 
 
 
-    sharedComposable("settings/content/romanization") {
-        RomanizationSettings(navController, scrollBehavior)
-    }
+
 
 
     
@@ -522,19 +483,6 @@ fun NavGraphBuilder.navigationBuilder(
     sharedComposable("settings/player/advanced") {
         PlayerAdvancedSettings(navController, scrollBehavior)
     }
-
-
-
-    sharedComposable("settings/scan_music") {
-        ScanMusicScreen(navController, scrollBehavior)
-    }
-
-
-
-    sharedComposable("settings/player/local_folders") {
-        LocalFoldersSettingsScreen(navController, scrollBehavior)
-    }
-
 
 
     sharedComposable(
@@ -553,20 +501,13 @@ fun NavGraphBuilder.navigationBuilder(
     }
 
 
-    sharedComposable(
-        route = "song_insight/{songId}",
-        arguments = listOf(navArgument("songId") { type = NavType.StringType }),
-    ) {
-        com.convx.music.ui.screens.library.SongInsightScreen(navController)
-    }
+
 
     sharedComposable("settings/privacy") {
         PrivacySettings(navController, scrollBehavior)
     }
 
-    sharedComposable("settings/backup_restore") {
-        BackupAndRestore(navController, scrollBehavior)
-    }
+
 
 
 

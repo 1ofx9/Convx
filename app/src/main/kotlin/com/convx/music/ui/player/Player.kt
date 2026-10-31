@@ -182,7 +182,6 @@ import coil3.request.crossfade
 import coil3.toBitmap
 import com.convx.music.LocalDatabase
 import com.convx.music.LocalDownloadUtil
-import com.convx.music.LocalListenTogetherManager
 import com.convx.music.LocalPlayerConnection
 import com.convx.music.LocalTabView
 import com.convx.music.R
@@ -224,7 +223,6 @@ import com.convx.music.db.entities.LyricsEntity
 import com.convx.music.extensions.SwipeGesture
 import com.convx.music.extensions.togglePlayPause
 import com.convx.music.extensions.toggleRepeatMode
-import com.convx.music.listentogether.RoomRole
 import com.convx.music.models.MediaMetadata
 import com.convx.music.playback.ExoDownloadService
 import com.convx.music.core.AudioDeviceMenu
@@ -454,13 +452,7 @@ fun BottomSheetPlayer(
                           playerFormat?.sampleMimeType?.contains("flac", ignoreCase = true) == true
     val sliderStyle by rememberEnumPreference(SliderStyleKey, SliderStyle.SLIM)
 
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val listenTogetherRoleState = listenTogetherManager?.role?.collectAsStateWithLifecycle(initialValue =RoomRole.NONE)
-    // "Guest" here means "may not drive playback", not merely "is not host":
-    // with the room set to everyone-control a member drives playback too, so
-    // keying the UI off the role alone left their controls greyed out.
-    val canControlTogether = listenTogetherManager?.canControl?.collectAsStateWithLifecycle(initialValue = true)
-    val isListenTogetherGuest = canControlTogether?.value == false
+    val isListenTogetherGuest = false
     
     // Cast state can be absent while the service is starting or stopping.
     val castHandler = remember(playerConnection) {

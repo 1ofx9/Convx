@@ -1,28 +1,16 @@
 package com.convx.music.convxcanvas
 
-import com.convx.music.artistvideo.ArtistVideoCanvasProvider
-import com.convx.music.artistvideo.ArtistVideoResponse
 import com.convx.music.canvas.CanvasArtwork
 
+/**
+ * Convx video canvas stub (video canvas scraping removed).
+ */
 object ConvxCanvasProvider {
     suspend fun getBySongArtist(
         song: String,
         artist: String,
         album: String? = null,
-    ): CanvasArtwork? = ArtistVideoCanvasProvider.getBySongArtist(song, artist, album)
-        ?.toCanvasArtwork(album)
+    ): CanvasArtwork? = null
 
-    suspend fun getByAlbumArtist(album: String, artist: String): CanvasArtwork? =
-        ArtistVideoCanvasProvider.getBySongArtist(song = album, artist = artist, album = album)
-            ?.toCanvasArtwork(album)
+    suspend fun getByAlbumArtist(album: String, artist: String): CanvasArtwork? = null
 }
-
-private fun ArtistVideoResponse.toCanvasArtwork(albumName: String?): CanvasArtwork = CanvasArtwork(
-    name = name,
-    artist = artist,
-    albumId = albumId,
-    albumName = albumName,
-    static = static,
-    animated = animated,
-    videoUrl = videoUrl,
-)

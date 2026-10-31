@@ -57,7 +57,7 @@ fun LyricsLineV2(
     inactiveAlpha: Float,
     baseFontSize: Float,
     lineHeight: Float,
-    showTranslated: Boolean,
+    showTranslated: Boolean = false,
     agentAlignment: Alignment.Horizontal,
     agentTextAlign: TextAlign,
 ) {
@@ -116,24 +116,7 @@ fun LyricsLineV2(
         )
     }
 
-    // Translated text support
-    if (showTranslated) {
-        val translatedText by entry.translatedTextFlow.collectAsStateWithLifecycle()
-        translatedText?.let { translated ->
-            Text(
-                    fontFamily = fontFamily,
-                text = translated,
-                fontSize = (baseFontSize * 0.7f).sp,
-                color = expressiveAccent.copy(alpha = if (isActive) 0.8f else inactiveAlpha * 0.8f),
-                textAlign = agentTextAlign,
-                // Slightly tighten translated text.
-                fontWeight = FontWeight.Bold,
-                letterSpacing = (baseFontSize * 0.7f * -0.012f).sp,
-                modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
-                lineHeight = (baseFontSize * 0.7f * (lineHeight / baseFontSize).coerceAtMost(1.3f)).sp
-            )
-        }
-    }
+
 }
 
 @Composable

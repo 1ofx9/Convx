@@ -47,7 +47,6 @@ import com.convx.music.ui.ios.foundation.iosRowPress
 sealed interface SettingsAction {
     data class Route(val route: String) : SettingsAction
     data object PlayerDesign : SettingsAction
-    data object LyricsStyle : SettingsAction
 }
 
 /** One row: a coloured glyph tile, a name, and where it goes. */
@@ -88,26 +87,14 @@ object SettingsHubs {
                     SettingsLink("Player design", R.drawable.play, { systemPink }, SettingsAction.PlayerDesign,
                         "Card, Vinyl, Clover, Apple Music — live previews", "theme layout background seek bar slider up next shadow volume bar"),
                     SettingsLink("Controls & layout", R.drawable.sliders, { systemIndigo }, route("settings/appearance/advanced"),
-                        "Thumbnail, mini player, buttons and badges", "mini player comment button audio quality badge thumbnail"),
-                    SettingsLink("Player icons", R.drawable.tune, { systemOrange }, route("settings/appearance/playericons"),
-                        "Choose the playback control icons"),
-                    SettingsLink("Canvas", R.drawable.canvas_art, { systemTeal }, route("settings/appearance/canvas"),
-                        "Animated artwork behind the player", "video animated artwork"),
+                        "Thumbnail, mini player, buttons and badges", "mini player audio quality badge thumbnail"),
                 ),
             ),
             SettingsLinkGroup(
                 "Lyrics",
                 listOf(
-                    SettingsLink("Lyrics style", R.drawable.lyrics, { systemPink }, SettingsAction.LyricsStyle,
-                        "Animation, position, scrolling and swipe — live preview", "animation karaoke word by word apple music position auto scroll swipe"),
-                    SettingsLink("Lyrics effects", R.drawable.lyrics, { systemPink }, route("settings/lyrics"),
-                        "Style, fonts, size, glow and blur", "convx lyrics font size glow blur apple music standard"),
-                    SettingsLink("Text & layout", R.drawable.lyrics, { systemOrange }, route("settings/appearance"),
-                        "Text size, spacing and full-screen lyrics", "size spacing fullscreen"),
-                    SettingsLink("Sources & priority", R.drawable.lyrics, { systemBlue }, route("settings/content/advanced"),
-                        "Choose and order lyric providers", "provider youlyplus paxsenix lrclib"),
-                    SettingsLink("Romanization", R.drawable.translate, { systemTeal }, route("settings/content/romanization"),
-                        "Show lyrics in Latin letters", "japanese korean chinese cyrillic"),
+                    SettingsLink("Lyrics & display", R.drawable.lyrics, { systemPink }, route("settings/lyrics"),
+                        "Font, size, glow, blur and line spacing", "font size glow blur display text spacing alignment"),
                 ),
             ),
         ),
@@ -117,26 +104,17 @@ object SettingsHubs {
         "playback", "Playback & Audio", R.drawable.equalizer, { systemRed },
         listOf(
             SettingsLinkGroup(
-                "Sound",
+                "Sound & Rules",
                 listOf(
-                    SettingsLink("Sound & rules", R.drawable.tune, { systemBlue }, route("settings/player"),
-                        "Bit-perfect streaming, normalization and silence skip", "quality normalization loudness silence bit perfect"),
+                    SettingsLink("Audio rules", R.drawable.tune, { systemBlue }, route("settings/player"),
+                        "Bit-perfect streaming, normalization, and Bluetooth rules", "quality normalization loudness silence bit perfect bluetooth output"),
                 ),
             ),
             SettingsLinkGroup(
-                "Queue & behaviour",
+                "Queue & Behavior",
                 listOf(
-                    SettingsLink("Queue & autoplay", R.drawable.queue_music, { systemOrange }, route("settings/player"),
-                        "Persistent queue, similar songs, shuffle memory", "persistent queue autoplay similar shuffle repeat"),
-                    SettingsLink("Bluetooth & output", R.drawable.cast, { systemIndigo }, route("settings/player"),
-                        "Resume on connect, pause when muted, Cast", "bluetooth cast chromecast mute"),
-                ),
-            ),
-            SettingsLinkGroup(
-                "Advanced",
-                listOf(
-                    SettingsLink("Advanced playback", R.drawable.settings, { systemGray }, route("settings/player/advanced"),
-                        "Offload, bit-perfect and queue rules", "offload bit perfect duplicates history duration"),
+                    SettingsLink("Queue & playback behavior", R.drawable.queue_music, { systemOrange }, route("settings/player/advanced"),
+                        "Persistent shuffle, duplicate tracks, and queue loading", "persistent queue autoplay shuffle repeat duplicates offload"),
                 ),
             ),
         ),
@@ -149,8 +127,6 @@ object SettingsHubs {
                 "Theme & colors",
                 listOf(
                     SettingsLink("Theme", R.drawable.palette, { systemPurple }, route("settings/appearance/theme"), "Accent, dark mode and pure black", "dark light accent color"),
-                    SettingsLink("Presets", R.drawable.palette, { systemPink }, route("settings/appearance/presets"), "Ready-made looks"),
-                    SettingsLink("Make your own", R.drawable.edit, { systemOrange }, route("settings/appearance/diy"), "Design a theme from scratch", "diy"),
                     SettingsLink("Liquid Glass", R.drawable.palette, { systemCyan }, route("settings/appearance/liquidglass"), "Blur, tint, highlights and lens", "glass blur"),
                 ),
             ),
@@ -158,7 +134,6 @@ object SettingsHubs {
                 "App",
                 listOf(
                     SettingsLink("Font", R.drawable.alphabet_cyrillic, { systemGray }, route("settings/appearance/font"), "App typeface"),
-                    SettingsLink("App icon", R.drawable.convx_logo, { systemBlue }, route("settings/appearance/appicon"), "Home screen icon"),
                     SettingsLink("Layout & home", R.drawable.sliders, { systemGreen }, route("settings/appearance"),
                         "Language, default tab, density, home", "language default tab density refresh rate"),
                     SettingsLink("Home feed order", R.drawable.sliders, { systemOrange }, route("settings/home_feed_order"), "Arrange home sections"),
@@ -175,21 +150,18 @@ object SettingsHubs {
     )
 
     val library = SettingsHub(
-        "library", "Library & Storage", R.drawable.storage, { systemOrange },
+        "library", "Server & Storage", R.drawable.storage, { systemOrange },
         listOf(
             SettingsLinkGroup(
                 "Music Sources",
                 listOf(
                     SettingsLink("Navidrome Server", R.drawable.storage, { systemGreen }, route("settings/network_storage"), "Connect Navidrome & Subsonic sources", "navidrome subsonic server lossless"),
-                    SettingsLink("Music folders", R.drawable.music_note, { systemOrange }, route("settings/player/local_folders"), "Choose local folders to scan", "local files folder"),
-                    SettingsLink("Scan local files", R.drawable.search, { systemBlue }, route("settings/scan_music"), "Find songs on this device", "scan local"),
                 ),
             ),
             SettingsLinkGroup(
                 "Storage & Backup",
                 listOf(
                     SettingsLink("Storage", R.drawable.storage, { systemGray }, route("settings/storage"), "Downloads and caches", "cache downloads clear"),
-                    SettingsLink("Backup & restore", R.drawable.restore, { systemGreen }, route("settings/backup_restore"), "Save or restore your library", "backup import export"),
                 ),
             ),
         ),
@@ -222,7 +194,7 @@ object SettingsSheets {
 fun rememberSettingsActionHandler(navController: NavController): (SettingsAction) -> Unit = { action ->
     when (action) {
         is SettingsAction.Route -> navController.navigate(action.route)
-        SettingsAction.PlayerDesign, SettingsAction.LyricsStyle -> SettingsSheets.open = action
+        SettingsAction.PlayerDesign -> SettingsSheets.open = action
     }
 }
 
@@ -237,7 +209,6 @@ fun SettingsSheetHost(navController: NavController) {
                 navController.navigate("settings/appearance/playertheme")
             })
         }
-        SettingsAction.LyricsStyle -> IosPageSheet("Lyrics style", close) { LyricsAnimationSheetContent() }
         else -> Unit
     }
 }

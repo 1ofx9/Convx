@@ -82,18 +82,6 @@
 -dontwarn org.openjsse.net.ssl.OpenJSSE
 -dontwarn org.slf4j.impl.StaticLoggerBinder
 
-## Rules for NewPipeExtractor
--keep class org.schabi.newpipe.extractor.services.youtube.protos.** { *; }
--keep class org.schabi.newpipe.extractor.timeago.patterns.** { *; }
--keep class org.mozilla.javascript.** { *; }
--keep class org.mozilla.javascript.engine.** { *; }
--dontwarn org.mozilla.javascript.JavaToJSONConverters
--dontwarn org.mozilla.javascript.tools.**
--keep class javax.script.** { *; }
--dontwarn javax.script.**
--keep class jdk.dynalink.** { *; }
--dontwarn jdk.dynalink.**
-
 ## Logging (does not affect Timber)
 -assumenosideeffects class android.util.Log {
     public static boolean isLoggable(java.lang.String, int);
@@ -142,12 +130,6 @@
 ## JSoup re2j optional dependency
 -dontwarn com.google.re2j.**
 
-# Vibra fingerprint library
--keep class com.convx.music.recognition.VibraSignature { *; }
--keepclassmembers class com.convx.music.recognition.VibraSignature {
-    native <methods>;
-}
-
 ## Kotlin Reflection Fix
 -keep class kotlin.Metadata { *; }
 -keep class kotlin.reflect.** { *; }
@@ -170,18 +152,6 @@
     *** Companion;
 }
 -keepclasseswithmembers class com.music.shazamkit.models.** {
-    kotlinx.serialization.KSerializer serializer(...);
-}
-
-## Listen Together Serialization
--keep class com.convx.music.listentogether.** { *; }
--keepclassmembers class com.convx.music.listentogether.** {
-    *;
-}
--keepclassmembers class com.convx.music.listentogether.** {
-    *** Companion;
-}
--keepclasseswithmembers class com.convx.music.listentogether.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 

@@ -72,7 +72,6 @@ import coil3.compose.AsyncImage
 import com.music.innertube.YouTube
 import com.convx.music.LocalDatabase
 import com.convx.music.LocalDownloadUtil
-import com.convx.music.LocalListenTogetherManager
 import com.convx.music.LocalPlayerConnection
 import com.convx.music.LocalSyncUtils
 import com.convx.music.R
@@ -125,8 +124,7 @@ fun SongMenu(
         .collectAsState(initial = null)
     val coroutineScope = rememberCoroutineScope()
     val syncUtils = LocalSyncUtils.current.get()
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val scope = rememberCoroutineScope()
+        val scope = rememberCoroutineScope()
     var refetchIconDegree by remember { mutableFloatStateOf(0f) }
 
     val cacheViewModel = hiltViewModel<CachePlaylistViewModel>()
@@ -340,7 +338,7 @@ fun SongMenu(
     val configuration = LocalConfiguration.current
     val isPortrait = configuration.orientation == Configuration.ORIENTATION_PORTRAIT
 
-    val isGuest = listenTogetherManager?.isInRoom == true && !listenTogetherManager.isHost
+    val isGuest = false
     // A file on the device has no YouTube id: share links, radio, download and refetch would all target a video that doesn't exist.
     val isLocal = song.song.isLocal
 
@@ -355,14 +353,7 @@ fun SongMenu(
         item {
             NewActionGrid(
                 actions = listOfNotNull(
-                    NewAction(
-                        icon = { Icon(painterResource(R.drawable.sparks), contentDescription = null, modifier = Modifier.size(28.dp)) },
-                        text = stringResource(R.string.song_insight_title),
-                        onClick = {
-                            onDismiss()
-                            navController.navigate("song_insight/${android.net.Uri.encode(song.id)}")
-                        },
-                    ),
+
                     NewAction(
                         icon = {
                             SymbolIcon(symbol = sf("pencil"), contentDescription = null, size = 28.dp, tint = AppTheme.colorScheme.onSurfaceVariant)
@@ -413,21 +404,7 @@ fun SongMenu(
                             context.startActivity(Intent.createChooser(intent, null))
                         }
                     ),
-                    NewAction(
-                        icon = {
-                            Icon(
-                                painter = painterResource(R.drawable.sparks),
-                                contentDescription = null,
-                                modifier = Modifier.size(28.dp),
-                                tint = AppTheme.colorScheme.onSurfaceVariant
-                            )
-                        },
-                        text = stringResource(R.string.ai_dj_mix_from_song),
-                        onClick = {
-                            onDismiss()
-                            navController.navigate("ai_dj_set?seedSongId=${song.id}")
-                        }
-                    ),
+
                     if (isLocal) null else NewAction(
                         icon = {
                             SymbolIcon(symbol = sf("square.and.arrow.up"), contentDescription = null, size = 28.dp, tint = AppTheme.colorScheme.onSurfaceVariant)
@@ -452,27 +429,7 @@ fun SongMenu(
         item {
             IosMenuGroup(
                 items = listOfNotNull(
-                    if (listenTogetherManager != null && listenTogetherManager.isInRoom && !listenTogetherManager.isHost) {
-                        IosMenuItemData(
-                            title = { Text(text = stringResource(R.string.suggest_to_host)) },
-                            icon = {
-                                SymbolIcon(symbol = sf("music.note.list"), contentDescription = null)
-                            },
-                            onClick = {
-                                val durationMs = if (song.song.duration > 0) song.song.duration.toLong() * 1000 else 180000L
-                                val trackInfo = com.convx.music.listentogether.TrackInfo(
-                                    id = song.id,
-                                    title = song.song.title,
-                                    artist = orderedArtists.joinToString(", ") { it.name },
-                                    album = song.song.albumName,
-                                    duration = durationMs,
-                                    thumbnail = song.thumbnailUrl
-                                )
-                                listenTogetherManager.suggestTrack(trackInfo)
-                                onDismiss()
-                            }
-                        )
-                    } else null,
+                    null,
                     if (!isGuest && !isLocal) {
                         IosMenuItemData(
                             title = { Text(text = stringResource(R.string.start_radio)) },

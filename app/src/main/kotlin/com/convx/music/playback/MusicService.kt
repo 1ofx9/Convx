@@ -121,17 +121,6 @@ import com.convx.music.constants.DisableLoadMoreWhenRepeatAllKey
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
-import com.convx.music.constants.DiscordActivityNameKey
-import com.convx.music.constants.DiscordActivityTypeKey
-import com.convx.music.constants.DiscordAdvancedModeKey
-import com.convx.music.constants.DiscordButton1TextKey
-import com.convx.music.constants.DiscordButton1VisibleKey
-import com.convx.music.constants.DiscordButton2TextKey
-import com.convx.music.constants.DiscordButton2VisibleKey
-import com.convx.music.constants.DiscordStatusKey
-import com.convx.music.constants.DiscordTokenKey
-import com.convx.music.constants.DiscordUseDetailsKey
-import com.convx.music.constants.EnableDiscordRPCKey
 import com.convx.music.constants.EnableLastFMScrobblingKey
 import com.convx.music.constants.HideExplicitKey
 import com.convx.music.constants.HideVideoSongsKey
@@ -222,7 +211,6 @@ import com.convx.music.playback.queues.YouTubeQueue
 import com.convx.music.playback.queues.filterExplicit
 import com.convx.music.playback.queues.filterVideoSongs
 import com.convx.music.utils.CoilBitmapLoader
-import com.convx.music.utils.DiscordRPC
 import com.convx.music.utils.NetworkConnectivityObserver
 import com.convx.music.utils.ScrobbleManager
 import com.convx.music.utils.SyncUtils
@@ -366,7 +354,7 @@ class MusicService :
 
     private var cachedSkipSilence = false
     private var cachedSkipSilenceInstant = false
-    private var cachedBitPerfect = false
+    private var cachedBitPerfect = true
     private var cachedOffloadEnabled = false
     private var cachedSpatialAudio = false
     private var cachedVocalSuppression = 0f
@@ -495,9 +483,7 @@ class MusicService :
     private var isAudioEffectSessionOpened = false
     private var loudnessEnhancer: LoudnessEnhancer? = null
 
-    private var discordRpc: DiscordRPC? = null
     private var lastPlaybackSpeed = 1.0f
-    private var discordUpdateJob: kotlinx.coroutines.Job? = null
 
     private var scrobbleManager: ScrobbleManager? = null
 
@@ -563,7 +549,6 @@ class MusicService :
                 Intent.ACTION_SCREEN_OFF -> {
                     if (!player.isPlaying) {
                         scope.launch(Dispatchers.IO) {
-                            discordRpc?.closeRPC()
                         }
                     }
                 }
@@ -571,7 +556,6 @@ class MusicService :
                     if (player.isPlaying) {
                         scope.launch {
                             currentSong.value?.let { song ->
-                                updateDiscordRPC(song)
                             }
                         }
                     }
@@ -737,14 +721,6 @@ class MusicService :
                 if (isConnected && waitingForNetworkConnection.value) {
                     errorRecovery.triggerRetry()
                 }
-                if (isConnected && discordRpc != null && player.isPlaying) {
-                    val mediaId = player.currentMetadata?.id
-                    if (mediaId != null) {
-                        database.song(mediaId).first()?.let { song ->
-                            updateDiscordRPC(song)
-                        }
-                    }
-                }
             }
         }
 
@@ -754,7 +730,6 @@ class MusicService :
 
         observeAudioProcessingPreferences()
 
-        observeDiscordPreferences()
 
         observeScrobblingPreferences()
 
@@ -849,15 +824,15 @@ class MusicService :
                     }
                 }
             }
-            if (existing == null && metadata.id.startsWith(com.convx.storage.domain.NetworkMediaUri.Scheme + "://")) {
-                runCatching {
-                    networkRepository.fetchLyrics(metadata.id, metadata.artists.firstOrNull()?.name, metadata.title)
-                }.getOrNull()?.takeIf { it.isNotBlank() }?.let { serverLyrics ->
-                    persistUpgrade(LyricsWithProvider(serverLyrics, "Navidrome"))
-                    if (LyricsSyncLevel.detect(serverLyrics) == LyricsSyncLevel.LINE || LyricsSyncLevel.detect(serverLyrics) == LyricsSyncLevel.WORD) {
-                        return@collectLatest
-                    }
+            if (metadata.id.startsWith(com.convx.storage.domain.NetworkMediaUri.Scheme + "://")) {
+                if (existing == null) {
+                    runCatching {
+                        networkRepository.fetchLyrics(metadata.id, metadata.artists.firstOrNull()?.name, metadata.title)
+                    }.getOrNull()?.takeIf { it.isNotBlank() }?.let { serverLyrics ->
+                        persistUpgrade(LyricsWithProvider(serverLyrics, "Navidrome"))
+                    } ?: persistUpgrade(LyricsWithProvider(LyricsEntity.LYRICS_NOT_FOUND, "Navidrome"))
                 }
+                return@collectLatest
             }
             val initial = database.lyrics(metadata.id).first()?.let { LyricsWithProvider(it.lyrics, it.provider) }
             val found = lyricsHelper.getLyrics(metadata, initial, ::persistUpgrade)
@@ -893,7 +868,7 @@ class MusicService :
             }
 
         dataStore.data
-            .map { it[BitPerfectKey] ?: false }
+            .map { it[BitPerfectKey] ?: true }
             .distinctUntilChanged()
             .collectLatest(scope) { bitPerfect ->
                 cachedBitPerfect = bitPerfect
@@ -954,51 +929,6 @@ class MusicService :
             }
     }
 
-    private fun observeDiscordPreferences() {
-        return // Discord RPC scrobbling disabled
-        dataStore.data
-            .map { it[DiscordTokenKey] to (it[EnableDiscordRPCKey] ?: true) }
-            .debounce(300)
-            .distinctUntilChanged()
-            .collect(scope) { (key, enabled) ->
-                if (discordRpc?.isRpcRunning() == true) {
-                    discordRpc?.closeRPC()
-                }
-                discordRpc = null
-                if (key != null && enabled) {
-                    discordRpc = DiscordRPC(this, key)
-                    if (player.playbackState == Player.STATE_READY && player.playWhenReady) {
-                        currentSong.value?.let {
-                            updateDiscordRPC(it, true)
-                        }
-                    }
-                }
-            }
-
-        dataStore.data
-            .map {
-                listOf(
-                    it[DiscordUseDetailsKey],
-                    it[DiscordAdvancedModeKey],
-                    it[DiscordStatusKey],
-                    it[DiscordButton1TextKey],
-                    it[DiscordButton1VisibleKey],
-                    it[DiscordButton2TextKey],
-                    it[DiscordButton2VisibleKey],
-                    it[DiscordActivityTypeKey],
-                    it[DiscordActivityNameKey]
-                )
-            }
-            .debounce(300)
-            .distinctUntilChanged()
-            .collect(scope) {
-                if (player.playbackState == Player.STATE_READY) {
-                    currentSong.value?.let { song ->
-                        updateDiscordRPC(song, true)
-                    }
-                }
-            }
-    }
 
     private fun observeScrobblingPreferences() {
         dataStore.data
@@ -2646,7 +2576,6 @@ class MusicService :
 
         audioEffects.setupLoudnessEnhancer()
 
-        discordUpdateJob?.cancel()
 
         updateScrobblingForCurrentTrack()
 
@@ -2858,7 +2787,6 @@ class MusicService :
             }
             if (!player.isPlaying && !events.containsAny(Player.EVENT_POSITION_DISCONTINUITY, Player.EVENT_MEDIA_ITEM_TRANSITION)) {
                 scope.launch {
-                    discordRpc?.close()
                 }
             }
         }
@@ -2868,7 +2796,6 @@ class MusicService :
             if (mediaId != null) {
                 scope.launch {
                     database.song(mediaId).first()?.let { song ->
-                        updateDiscordRPC(song)
                     }
                 }
             }
@@ -3000,16 +2927,6 @@ class MusicService :
 
         if (playbackParameters.speed != lastPlaybackSpeed) {
             lastPlaybackSpeed = playbackParameters.speed
-            discordUpdateJob?.cancel()
-
-            discordUpdateJob = scope.launch {
-                delay(1000)
-                if (player.playWhenReady && player.playbackState == Player.STATE_READY) {
-                    currentSong.value?.let { song ->
-                        updateDiscordRPC(song)
-                    }
-                }
-            }
         }
     }
 
@@ -3381,42 +3298,6 @@ class MusicService :
 
     private val losslessStallGuard = LosslessStallGuard()
 
-    private fun updateDiscordRPC(song: Song, showFeedback: Boolean = false) {
-        val useDetails = dataStore.get(DiscordUseDetailsKey, false)
-        val advancedMode = dataStore.get(DiscordAdvancedModeKey, false)
-
-        val status = if (advancedMode) dataStore.get(DiscordStatusKey, "online") else "online"
-        val b1Text = if (advancedMode) dataStore.get(DiscordButton1TextKey, "") else ""
-        val b1Visible = if (advancedMode) dataStore.get(DiscordButton1VisibleKey, true) else true
-        val b2Text = if (advancedMode) dataStore.get(DiscordButton2TextKey, "") else ""
-        val b2Visible = if (advancedMode) dataStore.get(DiscordButton2VisibleKey, true) else true
-        val activityType = if (advancedMode) dataStore.get(DiscordActivityTypeKey, "listening") else "listening"
-        val activityName = if (advancedMode) dataStore.get(DiscordActivityNameKey, "") else ""
-
-        discordUpdateJob?.cancel()
-        discordUpdateJob = scope.launch {
-            discordRpc?.updateSong(
-                song,
-                player.currentPosition,
-                player.playbackParameters.speed,
-                useDetails,
-                status,
-                b1Text,
-                b1Visible,
-                b2Text,
-                b2Visible,
-                activityType,
-                activityName
-            )?.onFailure {
-                // Rate limited or error
-                if (showFeedback) {
-                    Handler(Looper.getMainLooper()).post {
-                        Toast.makeText(this@MusicService, "Discord RPC update failed: ${it.message}", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-        }
-    }
 
     /** Provider preferences that require resolving the queue again. */
     private fun streamSourcePreferences(prefs: androidx.datastore.preferences.core.Preferences): List<String> = listOf(
@@ -3973,10 +3854,6 @@ class MusicService :
         if (dataStore.get(PersistentQueueKey, true)) {
             queueRepository.saveQueueToDisk()
         }
-        if (discordRpc?.isRpcRunning() == true) {
-            discordRpc?.closeRPC()
-        }
-        discordRpc = null
         connectivityObserver.unregister()
         audioResources.releaseWifiLock()
         audioResources.abandonAudioFocus()
@@ -3991,7 +3868,6 @@ class MusicService :
         player.removeListener(this)
         player.removeListener(sleepTimer)
         releasePlaybackPlayer(player)
-        discordUpdateJob?.cancel()
         scope.cancel()
         super.onDestroy()
     }

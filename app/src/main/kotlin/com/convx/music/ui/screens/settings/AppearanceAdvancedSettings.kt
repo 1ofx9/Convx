@@ -80,7 +80,6 @@ import com.convx.music.constants.ReduceDynamicBlurKey
 import com.convx.music.constants.TopBarBlurStyle
 import com.convx.music.constants.TopBarBlurStyleKey
 import com.convx.music.constants.ShowAudioQualityBadgeKey
-import com.convx.music.constants.ShowCommentButtonKey
 import com.convx.music.constants.ShowHomeFabKey
 import com.convx.music.constants.SpeedDialCardHeightOverrideKey
 import com.convx.music.constants.SpeedDialColumnsOverrideKey
@@ -172,10 +171,7 @@ fun AppearanceAdvancedSettings(
         NavBarMeltTransitionKey,
         defaultValue = true
     )
-    val (showCommentButton, onShowCommentButtonChange) = rememberPreference(
-        ShowCommentButtonKey,
-        defaultValue = true
-    )
+
 
     val (enableLyricsThumbnailPlayPause, onEnableLyricsThumbnailPlayPauseChange) = rememberPreference(
         EnableLyricsThumbnailPlayPauseKey,
@@ -567,15 +563,7 @@ fun AppearanceAdvancedSettings(
                             },
                             onClick = { onNavBarMeltTransitionChange(!navBarMeltTransition) }
                         ),
-                        IosSettingsItem(
-                            icon = painterResource(R.drawable.chat_msg),
-                            title = { Text(stringResource(R.string.show_comment_button)) },
-                            description = { Text(stringResource(R.string.show_comment_button_description)) },
-                            trailingContent = {
-                                Switch(checked = showCommentButton, onCheckedChange = onShowCommentButtonChange)
-                            },
-                            onClick = { onShowCommentButtonChange(!showCommentButton) }
-                        ),
+
                     )
                 )
 

@@ -340,9 +340,10 @@ fun StatsScreen(
                                                     playerConnection.togglePlayPause()
                                                 } else {
                                                     playerConnection.playQueue(
-                                                        YouTubeQueue(
-                                                            endpoint = WatchEndpoint(song.id),
-                                                            preloadItem = mostPlayedSongs[index].toMediaMetadata(),
+                                                        ListQueue(
+                                                            title = "Most Played",
+                                                            items = mostPlayedSongs.map { it.toMediaItem() },
+                                                            startIndex = index,
                                                         ),
                                                     )
                                                 }

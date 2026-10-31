@@ -133,7 +133,6 @@ import com.composables.sfsymbols.monochrome.SFStar
 import com.convx.music.constants.HideExplicitKey
 import com.convx.music.constants.DataSaverEnabledKey
 import com.convx.music.constants.HideVideoSongsKey
-import com.convx.music.constants.AlbumCanvasEnabledKey
 import com.convx.music.db.entities.Album
 import com.convx.music.extensions.toMediaItem
 import com.convx.music.playback.ExoDownloadService
@@ -186,7 +185,6 @@ import com.convx.music.ui.utils.rememberHeroZoom
 import com.convx.music.ui.utils.heroPullZoom
 import com.convx.music.ui.utils.listOverscroll
 import com.convx.music.ui.utils.fadingEdge
-import com.convx.music.ui.player.CanvasArtworkPlayer
 import com.convx.music.ui.theme.HeroTintedContent
 import com.convx.music.ui.component.rememberHeroTint
 import com.convx.music.ui.component.rememberHeroTopBlur
@@ -234,16 +232,7 @@ fun AlbumScreen(
     val dataSaverEnabled by rememberPreference(key = DataSaverEnabledKey, defaultValue = false)
     val hideVideoSongsPref by rememberPreference(key = HideVideoSongsKey, defaultValue = false)
     val hideVideoSongs = if (dataSaverEnabled) true else hideVideoSongsPref
-    val albumCanvasEnabledPref by rememberPreference(key = AlbumCanvasEnabledKey, defaultValue = false)
-    val albumCanvasEnabled = if (dataSaverEnabled) false else albumCanvasEnabledPref
-
-    val albumCanvas = rememberAlbumCanvas(
-        albumTitle = albumWithSongs?.album?.title,
-        artistName = albumWithSongs?.artists?.joinToString { it.name }?.takeIf { it.isNotEmpty() },
-        firstSongTitle = albumWithSongs?.songs?.firstOrNull()?.song?.title
-    )
-    val canvasArtwork = albumCanvas.artwork
-
+        
     val filteredSongs = remember(albumWithSongs, hideExplicit, hideVideoSongs) {
         var songs = albumWithSongs?.songs ?: emptyList()
         if (hideExplicit) {
@@ -465,14 +454,7 @@ fun AlbumScreen(
                             }
                         }
                     },
-                    artworkOverlay = {
-                        if (albumCanvasEnabled && canvasArtwork != null) {
-                            CanvasArtworkPlayer(primaryUrl = canvasArtwork.animated, fallbackUrl = canvasArtwork.videoUrl,
-                                isPlaying = !com.convx.music.ui.utils.artworkTransitionRunning(),
-                                onExhausted = albumCanvas.onError, onReady = albumCanvas.onReady,
-                                modifier = Modifier.fillMaxSize())
-                        }
-                    },
+                    artworkOverlay = null,
                 )
             }
 

@@ -30,7 +30,6 @@ val LocalPlayerConnection = staticCompositionLocalOf<PlayerConnection?> { error(
 val LocalPlayerAwareWindowInsets = compositionLocalOf<WindowInsets> { error("No WindowInsets provided") }
 val LocalDownloadUtil = staticCompositionLocalOf<dagger.Lazy<DownloadUtil>> { error("No DownloadUtil provided") }
 val LocalSyncUtils = staticCompositionLocalOf<dagger.Lazy<SyncUtils>> { error("No SyncUtils provided") }
-val LocalListenTogetherManager = staticCompositionLocalOf<com.convx.music.listentogether.ListenTogetherManager?> { null }
 val LocalIsPlayerExpanded = compositionLocalOf { false }
 
 /**

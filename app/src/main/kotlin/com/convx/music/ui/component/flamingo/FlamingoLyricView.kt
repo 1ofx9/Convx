@@ -289,7 +289,10 @@ fun YosLyricView(
         YosWrapper {
             LazyColumn(
                 state = scrollState,
-                contentPadding = PaddingValues(vertical = with(LocalDensity.current) { (height.intValue / 2f).toDp() }),
+                contentPadding = PaddingValues(
+                    top = with(LocalDensity.current) { (height.intValue * 0.28f).toDp() },
+                    bottom = with(LocalDensity.current) { (height.intValue * 0.40f).toDp() }
+                ),
                 modifier =
                 modifier
                     .fillMaxSize()
@@ -364,8 +367,8 @@ fun YosLyricView(
                                 if (!showStateAnimation.value || focusedLyricIndices.value.contains(index) || !blurLambda() || !supportBlur) {
                                     0f
                                 } else {
-                                    (abs(index - focusedLyricAnchorIndex.value) * 2.5f).coerceAtMost(
-                                        8f
+                                    (abs(index - focusedLyricAnchorIndex.value) * 2.0f).coerceAtMost(
+                                        5.5f
                                     )
                                 }
                             }
@@ -415,9 +418,6 @@ fun YosLyricView(
 
                 }
                 blankSpacer()
-                item("extra_blank") {
-                    Spacer(modifier = Modifier.height(500.dp))
-                }
             }
         }
 
@@ -539,7 +539,7 @@ fun LazyItemScope.LyricItem(
     val viewAlign = if (otherSide) Alignment.End else Alignment.Start
 
     val focusedColor = Color(0xFFFFFFFF)
-    val unfocusedColor = Color(0x2EFFFFFF)
+    val unfocusedColor = Color(0x66FFFFFF)
 
     val unfocusedSolidBrush = SolidColor(unfocusedColor)
     val currentLineChrome = animateFloatAsState(
@@ -608,7 +608,7 @@ fun LazyItemScope.LyricItem(
             }
 
             val scale = animateFloatAsState(
-                targetValue = if (isCurrentLambda()) 1.005f else 1f,
+                targetValue = if (isCurrentLambda()) 1.025f else 1f,
                 animationSpec = if (isCurrentLambda()) tweenSpecWithDelay else tweenSpecWithoutDelay
             )
 
@@ -736,7 +736,7 @@ fun LazyItemScope.LyricItem(
 
                                 YosWrapper {
                                     val thisAlphaAnimated = animateFloatAsState(
-                                        targetValue = if (isCurrentLambda())  1f else 0.14f,
+                                        targetValue = if (isCurrentLambda()) 1f else 0.38f,
                                         animationSpec = if (isCurrentLambda()) alphaTweenSpecWithDelay else alphaTweenSpecWithoutDelay
                                     )
 
@@ -791,48 +791,7 @@ fun LazyItemScope.LyricItem(
                                             .padding(vertical = 4.dp)
                                             .then(otherSidePadding.value)
                                             .padding(horizontal = 10.dp, vertical = 5.dp)
-                                            .drawBehind {
-                                                val intensity = currentLineChrome.value
-                                                if (intensity > 0.001f) {
-                                                    val radius = CornerRadius(size.height / 2f)
-                                                    val accent = mainTextBasicColor
-                                                    drawRoundRect(
-                                                        brush = Brush.verticalGradient(
-                                                            colors = listOf(
-                                                                Color.White.copy(alpha = 0.025f * intensity),
-                                                                accent.copy(alpha = 0.075f * intensity),
-                                                                accent.copy(alpha = 0.035f * intensity),
-                                                            ),
-                                                        ),
-                                                        cornerRadius = radius,
-                                                    )
-                                                    drawRoundRect(
-                                                        brush = Brush.verticalGradient(
-                                                            colors = listOf(
-                                                                Color.White.copy(alpha = 0.30f * intensity),
-                                                                accent.copy(alpha = 0.11f * intensity),
-                                                                Color.White.copy(alpha = 0.04f * intensity),
-                                                            ),
-                                                        ),
-                                                        cornerRadius = radius,
-                                                        style = Stroke(width = 1.dp.toPx()),
-                                                    )
-                                                    drawLine(
-                                                        brush = Brush.horizontalGradient(
-                                                            colors = listOf(
-                                                                Color.Transparent,
-                                                                Color.White.copy(alpha = 0.38f * intensity),
-                                                                accent.copy(alpha = 0.22f * intensity),
-                                                                Color.Transparent,
-                                                            ),
-                                                        ),
-                                                        start = Offset(12.dp.toPx(), size.height - 1.dp.toPx()),
-                                                        end = Offset(size.width - 12.dp.toPx(), size.height - 1.dp.toPx()),
-                                                        strokeWidth = 1.5.dp.toPx(),
-                                                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
-                                                    )
-                                                }
-                                            }
+
                                             .clickable(
                                                 indication = null,
                                                 interactionSource = remember { MutableInteractionSource() }

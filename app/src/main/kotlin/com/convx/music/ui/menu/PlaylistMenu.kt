@@ -65,7 +65,6 @@ import androidx.media3.exoplayer.offline.Download
 import com.music.innertube.YouTube
 import com.convx.music.LocalDatabase
 import com.convx.music.LocalDownloadUtil
-import com.convx.music.LocalListenTogetherManager
 import com.convx.music.LocalPlayerConnection
 import com.convx.music.R
 import com.convx.music.db.entities.Playlist
@@ -110,8 +109,7 @@ fun PlaylistMenu(
     val database = LocalDatabase.current.get()
     val downloadUtil = LocalDownloadUtil.current.get()
     val playerConnection = LocalPlayerConnection.current ?: return
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val isGuest = listenTogetherManager?.isInRoom == true && !listenTogetherManager.isHost
+    val isGuest = false
     val dbPlaylist by database.playlist(playlist.id).collectAsState(initial = playlist)
     var songs by remember {
         mutableStateOf(emptyList<Song>())

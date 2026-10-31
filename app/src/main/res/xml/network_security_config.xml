@@ -1,25 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Public services require HTTPS. HTTP exceptions are limited to loopback. -->
-    <base-config cleartextTrafficPermitted="false">
+    <!-- Self-hosted servers (Navidrome, Subsonic, WebDAV) often run on HTTP on local networks. -->
+    <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />
+            <certificates src="user" />
         </trust-anchors>
     </base-config>
-    <!-- Domain rules require hostname-aware TLS verification; Android Ktor clients use OkHttp. -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="false">localhost</domain>
-        <domain includeSubdomains="false">127.0.0.1</domain>
-        <domain includeSubdomains="false">10.0.2.2</domain>
-    </domain-config>
-    <!-- Debug-only: lets a debug build be MITM-inspected (PCAPdroid, mitmproxy) for
-         diagnosing network issues. Never applies to release builds regardless of
-         this block's presence — debug-overrides is only honored when the APK is
-         built with android:debuggable="true". -->
-    <debug-overrides>
-        <trust-anchors>
-            <certificates src="user" />
-            <certificates src="system" />
-        </trust-anchors>
-    </debug-overrides>
 </network-security-config>

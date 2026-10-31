@@ -23,6 +23,17 @@ class NavidromeFileSource(
         .build(),
 ) {
 
+    fun baseUrl(server: NetworkServer): String {
+        var addr = server.address.trim()
+        if (!addr.startsWith("http://", ignoreCase = true) && !addr.startsWith("https://", ignoreCase = true)) {
+            addr = "http://$addr"
+        }
+        if (!addr.endsWith("/")) {
+            addr = "$addr/"
+        }
+        return addr
+    }
+
     fun authQuery(server: NetworkServer): String {
         val salt = UUID.randomUUID().toString().replace("-", "").take(8)
         val raw = server.credentials.password + salt
@@ -33,7 +44,7 @@ class NavidromeFileSource(
     }
 
     suspend fun test(server: NetworkServer) = withContext(Dispatchers.IO) {
-        val url = "${server.address}rest/ping.view?${authQuery(server)}".toHttpUrl()
+        val url = "${baseUrl(server)}rest/ping.view?${authQuery(server)}".toHttpUrl()
         val request = Request.Builder().url(url).build()
         client.newCall(request).await().use { response ->
             if (!response.isSuccessful) throw StorageException(StorageError.CONNECTION)
@@ -57,7 +68,7 @@ class NavidromeFileSource(
         var truncated = false
 
         while (tracks.size < maxTracks) {
-            val url = "${server.address}rest/getAlbumList2.view?type=alphabeticalByName&size=$pageSize&offset=$offset&${authQuery(server)}".toHttpUrl()
+            val url = "${baseUrl(server)}rest/getAlbumList2.view?type=alphabeticalByName&size=$pageSize&offset=$offset&${authQuery(server)}".toHttpUrl()
             val request = Request.Builder().url(url).build()
             val albumIds = client.newCall(request).await().use { response ->
                 if (!response.isSuccessful) throw StorageException(StorageError.CONNECTION)
@@ -82,7 +93,7 @@ class NavidromeFileSource(
                     truncated = true
                     break
                 }
-                val albumUrl = "${server.address}rest/getAlbum.view?id=$albumId&${authQuery(server)}".toHttpUrl()
+                val albumUrl = "${baseUrl(server)}rest/getAlbum.view?id=$albumId&${authQuery(server)}".toHttpUrl()
                 val albumReq = Request.Builder().url(albumUrl).build()
                 client.newCall(albumReq).await().use { response ->
                     if (!response.isSuccessful) return@use
@@ -116,7 +127,7 @@ class NavidromeFileSource(
                         val size = songObj.optLong("size", -1L)
 
                         val artworkUrl = songCover?.let {
-                            "${server.address}rest/getCoverArt.view?id=$it&size=800&${authQuery(server)}"
+                            "${baseUrl(server)}rest/getCoverArt.view?id=$it&size=800&${authQuery(server)}"
                         }
 
                         tracks.add(
@@ -155,7 +166,7 @@ class NavidromeFileSource(
     ): List<NetworkPlaylist> = withContext(Dispatchers.IO) {
         val result = mutableListOf<NetworkPlaylist>()
         try {
-            val url = "${server.address}rest/getPlaylists.view?${authQuery(server)}".toHttpUrl()
+            val url = "${baseUrl(server)}rest/getPlaylists.view?${authQuery(server)}".toHttpUrl()
             val request = Request.Builder().url(url).build()
             val playlistSummaries = client.newCall(request).await().use { response ->
                 if (!response.isSuccessful) return@use emptyList<Triple<String, String, String?>>()
@@ -177,7 +188,7 @@ class NavidromeFileSource(
 
             for ((plId, plName, plCover) in playlistSummaries) {
                 try {
-                    val detailUrl = "${server.address}rest/getPlaylist.view?id=$plId&${authQuery(server)}".toHttpUrl()
+                    val detailUrl = "${baseUrl(server)}rest/getPlaylist.view?id=$plId&${authQuery(server)}".toHttpUrl()
                     val detailReq = Request.Builder().url(detailUrl).build()
                     val trackIds = client.newCall(detailReq).await().use { resp ->
                         if (!resp.isSuccessful) return@use emptyList<String>()
@@ -205,7 +216,7 @@ class NavidromeFileSource(
                                 val year = entry.optInt("year", -1).takeIf { it > 0 }
                                 val size = entry.optLong("size", -1L)
                                 val artworkUrl = cover?.let {
-                                    "${server.address}rest/getCoverArt.view?id=$it&size=800&${authQuery(server)}"
+                                    "${baseUrl(server)}rest/getCoverArt.view?id=$it&size=800&${authQuery(server)}"
                                 }
 
                                 tracks.add(
@@ -229,7 +240,7 @@ class NavidromeFileSource(
                     }
 
                     val artworkUrl = plCover?.let {
-                        "${server.address}rest/getCoverArt.view?id=$it&size=800&${authQuery(server)}"
+                        "${baseUrl(server)}rest/getCoverArt.view?id=$it&size=800&${authQuery(server)}"
                     }
 
                     result.add(
@@ -248,7 +259,7 @@ class NavidromeFileSource(
 
     fun resolveStreamUrl(server: NetworkServer, songId: String): String {
         val cleanId = songId.removePrefix("/")
-        return "${server.address}rest/stream.view?id=$cleanId&maxBitRate=0&format=raw&${authQuery(server)}"
+        return "${baseUrl(server)}rest/stream.view?id=$cleanId&maxBitRate=0&format=raw&${authQuery(server)}"
     }
 
     suspend fun fetchLyrics(
@@ -261,7 +272,7 @@ class NavidromeFileSource(
 
         // 1. Try OpenSubsonic getLyricsBySongId.view
         try {
-            val url = "${server.address}rest/getLyricsBySongId.view?id=$cleanId&${authQuery(server)}".toHttpUrl()
+            val url = "${baseUrl(server)}rest/getLyricsBySongId.view?id=$cleanId&${authQuery(server)}".toHttpUrl()
             val request = Request.Builder().url(url).build()
             val lyrics = client.newCall(request).await().use { response ->
                 if (!response.isSuccessful) return@use null
@@ -310,7 +321,7 @@ class NavidromeFileSource(
             try {
                 val encArtist = java.net.URLEncoder.encode(artist, "UTF-8")
                 val encTitle = java.net.URLEncoder.encode(title, "UTF-8")
-                val url = "${server.address}rest/getLyrics.view?artist=$encArtist&title=$encTitle&${authQuery(server)}".toHttpUrl()
+                val url = "${baseUrl(server)}rest/getLyrics.view?artist=$encArtist&title=$encTitle&${authQuery(server)}".toHttpUrl()
                 val request = Request.Builder().url(url).build()
                 val lyrics = client.newCall(request).await().use { response ->
                     if (!response.isSuccessful) return@use null

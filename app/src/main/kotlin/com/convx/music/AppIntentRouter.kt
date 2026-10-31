@@ -14,11 +14,9 @@ import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.coroutineScope
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
-import com.convx.music.constants.ListenTogetherUsernameKey
 import com.convx.music.models.toMediaMetadata
 import com.convx.music.playback.PlayerConnection
 import com.convx.music.playback.queues.YouTubeQueue
-import com.convx.music.listentogether.ListenTogetherManager
 import com.convx.music.utils.dataStore
 import com.convx.music.utils.get
 import com.convx.music.utils.reportException
@@ -34,8 +32,6 @@ import dagger.Lazy
 internal class AppIntentRouter(
     private val activity: MainActivity,
     private val currentPlayerConnection: () -> PlayerConnection?,
-    private val listenTogetherManagerProvider: Lazy<ListenTogetherManager>,
-    private val partyManagerProvider: Lazy<com.convx.music.jam.JamManager>,
 ) {
 
     private val allowedIdPattern = Regex("^[A-Za-z0-9_\\-]+$")
@@ -59,9 +55,7 @@ internal class AppIntentRouter(
     }
 
     private fun routeSharedLink(uri: Uri, navController: NavHostController) {
-        if (openPartyInvite(uri, navController)) return
-        if (joinListenRoom(uri)) return
-
+        
         when (uri.pathSegments.firstOrNull()) {
             "playlist" -> openPlaylist(uri, navController)
             "browse", "album" -> cleanId(uri.lastPathSegment)?.let { browseId ->
@@ -75,36 +69,7 @@ internal class AppIntentRouter(
         }
     }
 
-    /** `convx://party/CODE?server=...` opens the Party screen, which joins the code on arrival. */
-    private fun openPartyInvite(uri: Uri, navController: NavHostController): Boolean {
-        if (!uri.scheme.equals("convx", ignoreCase = true) || !uri.host.equals("party", ignoreCase = true)) return false
-        val code = cleanId(uri.pathSegments.firstOrNull(), min = 4, max = 16) ?: return true
-        partyManagerProvider.get().offerInvite(code, uri.getQueryParameter("server"))
-        navController.navigate("listen_together/party") { launchSingleTop = true }
-        return true
-    }
-
-    private fun joinListenRoom(uri: Uri): Boolean {
-        val rawCode = uri.getQueryParameter("code")
-            ?: uri.getQueryParameter("room")
-            ?: uri.pathSegments.getOrNull(1)
-        val listenCode = cleanId(
-            rawCode,
-            min = 4,
-            max = 16,
-        )
-        val isListenLink = uri.pathSegments.firstOrNull() == "listen" ||
-            uri.host?.equals("listen", ignoreCase = true) == true
-        if (listenCode == null || !isListenLink) return false
-
-        // One listening session at a time: leaving any party first keeps two syncs off one player.
-        partyManagerProvider.get().leave()
-        val username = activity.dataStore.get(ListenTogetherUsernameKey, "").ifBlank { "Guest" }
-        val manager = listenTogetherManagerProvider.get()
-        manager.joinRoom(listenCode, username)
-        return true
-    }
-
+    
     private fun openPlaylist(uri: Uri, navController: NavHostController) {
         val playlistId = cleanId(uri.getQueryParameter("list"), max = 128)
             ?: cleanId(uri.pathSegments.getOrNull(1), max = 128)

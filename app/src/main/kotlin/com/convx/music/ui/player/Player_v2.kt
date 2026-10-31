@@ -30,8 +30,10 @@ import android.os.Looper
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -84,6 +86,7 @@ import com.convx.music.constants.PlayerThumbnailShadowElevationKey
 import com.convx.music.constants.EnableGoogleCastKey
 import com.convx.music.models.MediaMetadata
 import com.convx.music.ui.component.BottomSheetState
+import com.convx.music.ui.component.ListDialog
 import com.convx.music.ui.component.DjReadout
 import com.convx.music.ui.component.LocalGlassEffectConfig
 import com.convx.music.ui.component.liquidGlass
@@ -329,11 +332,7 @@ private fun PlayerV2Content(
     val menuState = LocalMenuState.current
     var showV2Options by remember { mutableStateOf(false) }
     var showRoutePopover by remember { mutableStateOf(false) }
-    // Same condition as LyricsMenu's "Translate with AI" entry.
-    val lyricsAiProvider by rememberPreference(com.convx.music.constants.AiProviderKey, "OpenRouter")
-    val lyricsOpenRouterKey by rememberPreference(com.convx.music.constants.OpenRouterApiKey, "")
-    val lyricsDeeplKey by rememberPreference(com.convx.music.constants.DeeplApiKey, "")
-    val hasLyricsAiKey = if (lyricsAiProvider == "DeepL") lyricsDeeplKey.isNotBlank() else lyricsOpenRouterKey.isNotBlank()
+
     val bottomSheetPageState = LocalBottomSheetPageState.current
     val paneState: androidx.compose.runtime.MutableState<PlayerInternalState> =
         auxiliaryPageState ?: remember { mutableStateOf(PlayerInternalState.COVER) }
@@ -409,9 +408,7 @@ private fun PlayerV2Content(
         }
     }
 
-    val listenTogetherManager = com.convx.music.LocalListenTogetherManager.current
-    val listenTogetherRoleState = listenTogetherManager?.role?.collectAsStateWithLifecycle(initialValue = com.convx.music.listentogether.RoomRole.NONE)
-    val isListenTogetherGuest = listenTogetherRoleState?.value == com.convx.music.listentogether.RoomRole.GUEST
+    val isListenTogetherGuest = false
     val isMuted by ui.isMuted
     val canSkipPrevious by ui.canSkipPrevious
     val canSkipNext by ui.canSkipNext
@@ -537,8 +534,37 @@ private fun PlayerV2Content(
     ) DiyOrientation.LANDSCAPE else DiyOrientation.PORTRAIT
 
     var showAudioDeviceBottomSheet by remember { mutableStateOf(false) }
+    var showArtistSelectDialog by rememberSaveable { mutableStateOf(false) }
     val sleepTimer = rememberSleepTimerState(playerConnection)
     SleepTimerDialogHost(playerConnection, sleepTimer)
+    if (showArtistSelectDialog) {
+        val artists = mediaMetadata?.artists.orEmpty().filter { !it.id.isNullOrBlank() }
+        ListDialog(
+            onDismiss = { showArtistSelectDialog = false },
+        ) {
+            items(artists, key = { it.id!! }) { artist ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            showArtistSelectDialog = false
+                            state.collapseSoft()
+                            navController.navigate("artist/${artist.id}")
+                        }
+                        .padding(horizontal = 24.dp, vertical = 14.dp)
+                ) {
+                    Text(
+                        text = artist.name,
+                        style = AppTheme.typography.titleMedium,
+                        color = AppTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+    }
 
     val audioDeviceIcons = com.convx.music.core.rememberAudioDeviceIcons()
     val audioDeviceNames = com.convx.music.core.rememberAudioDeviceNames()
@@ -738,8 +764,13 @@ private fun PlayerV2Content(
                 fontWeight = FontWeight.Normal,
                 scroll = !state.isCollapsed,
                 modifier = artistModifier.clickable {
-                    state.collapseSoft()
-                    mediaMetadata?.artists?.firstOrNull()?.id?.let { navController.navigate("artist/$it") }
+                    val artists = mediaMetadata?.artists.orEmpty().filter { !it.id.isNullOrBlank() }
+                    if (artists.size == 1) {
+                        state.collapseSoft()
+                        navController.navigate("artist/${artists[0].id}")
+                    } else if (artists.size > 1) {
+                        showArtistSelectDialog = true
+                    }
                 }
             )
             DjReadout(
@@ -856,9 +887,7 @@ private fun PlayerV2Content(
                         .background(adaptivePrimary.copy(alpha = 0.3f))
                         .clickable { state.collapseSoft() }
                 )
-                val partyViewModel: com.convx.music.viewmodels.JamViewModel = androidx.hilt.navigation.compose.hiltViewModel()
-                val party by partyViewModel.session.collectAsStateWithLifecycle()
-                party?.let { PartyChip(it.code, it.members.size, adaptivePrimary) { state.collapseSoft(); navController.navigate("listen_together/party") } }
+
                 if (showVideoSwitch) {
                     SongVideoModeControl(watchVideo, adaptivePrimary) { selected ->
                         if (selected && watchVideo && videoLookup is com.convx.music.playback.VideoStreamLookup.Unavailable) {
@@ -1433,35 +1462,14 @@ private fun PlayerV2Content(
                                         )
                                 ) {
                                     if (targetState == PlayerInternalState.LYRICS) {
-                                        Box(Modifier.fillMaxSize()) {
+                                        Box(Modifier.fillMaxSize().clipToBounds()) {
                                             Lyrics(
                                                 sliderPositionProvider = { sliderPosition ?: position },
                                                 showLyrics = true,
                                                 introKey = lyricsIntroKey,
                                                 modifier = Modifier.fillMaxSize()
                                             )
-                                            // Shares the lyrics menu setting; shown only when an AI provider is configured.
-                                            if (hasLyricsAiKey) {
-                                                val translationsOn by com.convx.music.lyrics.LyricsTranslationHelper.hasActiveTranslations.collectAsStateWithLifecycle()
-                                                Box(
-                                                    contentAlignment = Alignment.Center,
-                                                    modifier = Modifier
-                                                        .align(Alignment.BottomStart)
-                                                        .padding(start = 32.dp, bottom = 12.dp)
-                                                        .size(34.dp)
-                                                        .clip(androidx.compose.foundation.shape.CircleShape)
-                                                        .background(Color.White.copy(alpha = if (translationsOn) 0.6f else 0.32f))
-                                                        .clickable {
-                                                            if (translationsOn) {
-                                                                com.convx.music.lyrics.LyricsTranslationHelper.triggerClearTranslations()
-                                                            } else {
-                                                                com.convx.music.lyrics.LyricsTranslationHelper.triggerManualTranslation()
-                                                            }
-                                                        },
-                                                ) {
-                                                    SymbolIcon(symbol = sf("character.bubble"), contentDescription = stringResource(R.string.ai_lyrics_translation), size = 18.dp, tint = Color(0xFFF5F5F5))
-                                                }
-                                            }
+
                                         }
                                     } else {
                                         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -1777,9 +1785,7 @@ private fun PlayerV2Content(
             // (Controls AnimatedVisibility closed above)
 
             // Bottom Utility Action Bar
-            val bottomBarPad = if (isWidePlayerLayout) 0.dp else with(androidx.compose.ui.platform.LocalDensity.current) {
-                (31.dp - WindowInsets.navigationBars.getBottom(this).toDp()).coerceAtLeast(4.dp)
-            }
+            val bottomBarPad = if (isWidePlayerLayout) 0.dp else 12.dp
             AnimatedVisibility(
                 visible = controlsShown,
                 enter = fadeIn(animationSpec = ControlsShowSpec()) +
@@ -2097,7 +2103,7 @@ private fun PlayerV2Frame(
                 }
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    pane(Modifier.weight(1f))
+                    pane(Modifier.weight(1f).clipToBounds())
                     controls()
                 }
             }
@@ -2130,7 +2136,7 @@ private fun PlayerV2Frame(
                     }
                 }
             } else {
-                pane(Modifier.weight(1f))
+                pane(Modifier.weight(1f).clipToBounds())
                 controls()
             }
         }

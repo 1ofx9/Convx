@@ -424,7 +424,6 @@ internal fun Screens.navSymbol(): String? = when (this) {
     Screens.Search -> "magnifyingglass"
     Screens.Songs -> "music.note"
     Screens.Radio -> "dot.radiowaves.left.and.right"
-    Screens.ListenTogether -> "person.2.fill"
     else -> null
 }
 

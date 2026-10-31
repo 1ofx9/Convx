@@ -60,7 +60,6 @@ import com.music.innertube.YouTube
 import com.music.innertube.models.AlbumItem
 import com.convx.music.LocalDatabase
 import com.convx.music.LocalDownloadUtil
-import com.convx.music.LocalListenTogetherManager
 import com.convx.music.LocalPlayerConnection
 import com.convx.music.R
 import com.convx.music.constants.ListItemHeight
@@ -98,8 +97,7 @@ fun YouTubeAlbumMenu(
     val database = LocalDatabase.current.get()
     val downloadUtil = LocalDownloadUtil.current.get()
     val playerConnection = LocalPlayerConnection.current ?: return
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val isGuest = listenTogetherManager?.isInRoom == true && !listenTogetherManager.isHost
+    val isGuest = false
     val album by database.albumWithSongs(albumItem.id).collectAsState(initial = null)
     val isPinned by database.speedDialDao.isPinned(albumItem.id).collectAsState(initial = false)
     val coroutineScope = rememberCoroutineScope()

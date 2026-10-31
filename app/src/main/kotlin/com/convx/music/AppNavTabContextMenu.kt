@@ -37,7 +37,6 @@ internal fun navTabContextMenu(
         Screens.Home -> listOf(
             item(R.string.history, "history"),
             item(R.string.stats, "stats"),
-            item(R.string.together, Screens.ListenTogether.route),
         )
         Screens.Library -> listOf(
             item(R.string.history, "history"),

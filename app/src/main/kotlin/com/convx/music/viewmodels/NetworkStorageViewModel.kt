@@ -95,11 +95,15 @@ class NetworkStorageViewModel @Inject constructor(
         }
     }
 
-    private fun describe(error: Throwable): String = when ((error as? StorageException)?.error) {
-        StorageError.AUTHENTICATION -> context.getString(R.string.network_storage_err_auth)
-        StorageError.NOT_FOUND -> context.getString(R.string.network_storage_err_not_found)
-        StorageError.CONNECTION -> context.getString(R.string.network_storage_err_connection)
-        StorageError.LIMIT_REACHED -> context.getString(R.string.network_storage_err_limit)
-        else -> error.message ?: context.getString(R.string.network_storage_err_connection)
+    private fun describe(error: Throwable): String {
+        val baseMsg = when ((error as? StorageException)?.error) {
+            StorageError.AUTHENTICATION -> context.getString(R.string.network_storage_err_auth)
+            StorageError.NOT_FOUND -> context.getString(R.string.network_storage_err_not_found)
+            StorageError.CONNECTION -> context.getString(R.string.network_storage_err_connection)
+            StorageError.LIMIT_REACHED -> context.getString(R.string.network_storage_err_limit)
+            else -> error.message ?: context.getString(R.string.network_storage_err_connection)
+        }
+        val detail = error.cause?.localizedMessage ?: (error as? StorageException)?.cause?.localizedMessage
+        return if (!detail.isNullOrBlank() && detail != baseMsg) "$baseMsg ($detail)" else baseMsg
     }
 }

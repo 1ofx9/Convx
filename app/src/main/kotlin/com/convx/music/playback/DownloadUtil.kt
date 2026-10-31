@@ -61,16 +61,11 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
-import com.convx.music.applecanvas.AppleMusicCanvasProvider
-import com.convx.music.utils.SpotifyCanvasLookup
-import com.convx.music.canvas.AppleMusicArtistBackgroundProvider
 import com.convx.music.constants.CanvasSource
 import com.convx.music.constants.CanvasSourceKey
 import com.convx.music.ui.player.normalizeCanvasArtistName
 import com.convx.music.ui.player.normalizeCanvasSongTitle
 import com.convx.music.utils.dataStore
-import com.convx.music.convxcanvas.ConvxCanvasProvider
-import com.convx.music.canvas.TidalCanvasProvider
 import java.util.Locale
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -280,47 +275,7 @@ constructor(
     }
 
     private fun cacheCanvas(mediaId: String, playbackData: YTPlayerUtils.PlaybackData) {
-        scope.launch {
-            val sourceName = appContext.dataStore.data
-                .map { it[CanvasSourceKey] ?: CanvasSource.AUTO.name }
-                .first()
-            val canvasSource = CanvasSource.entries.firstOrNull { it.name == sourceName } ?: CanvasSource.AUTO
-
-            val storefront = Locale.getDefault().country.lowercase(Locale.ROOT).takeIf { it.length == 2 } ?: "us"
-            val requestedTitle = playbackData.videoDetails?.title.orEmpty()
-            val requestedArtist = playbackData.videoDetails?.author.orEmpty()
-            val title = normalizeCanvasSongTitle(requestedTitle)
-            val artist = normalizeCanvasArtistName(requestedArtist)
-
-            val canvasUrl = when (canvasSource) {
-                CanvasSource.AUTO ->
-                    SpotifyCanvasLookup.getBySongArtist(appContext, requestedTitle, requestedArtist)?.preferredAnimationUrl
-                        ?: AppleMusicCanvasProvider.getBySongArtist(title, artist, "", storefront)?.preferredAnimationUrl
-                        ?: ConvxCanvasProvider.getBySongArtist(title, artist)?.preferredAnimationUrl
-                        ?: TidalCanvasProvider.getBySongArtist(title, artist, "")?.preferredAnimationUrl
-                CanvasSource.APPLE_MUSIC ->
-                    AppleMusicCanvasProvider.getBySongArtist(title, artist, "", storefront)?.preferredAnimationUrl
-                CanvasSource.CONVX -> ConvxCanvasProvider.getBySongArtist(title, artist)?.preferredAnimationUrl
-                CanvasSource.TIDAL -> TidalCanvasProvider.getBySongArtist(title, artist, "")?.preferredAnimationUrl
-                CanvasSource.SPOTIFY ->
-                    SpotifyCanvasLookup.getBySongArtist(appContext, requestedTitle, requestedArtist)?.preferredAnimationUrl
-            } ?: return@launch
-
-            val dataSpec = DataSpec.Builder()
-                .setUri(canvasUrl.toUri())
-                .setKey("$mediaId#canvas")
-                .setFlags(DataSpec.FLAG_ALLOW_CACHE_FRAGMENTATION)
-                .build()
-            val dataSource = CacheDataSource.Factory()
-                .setCache(downloadCache)
-                .setUpstreamDataSourceFactory(DefaultDataSource.Factory(appContext))
-                .createDataSource()
-
-            currentCoroutineContext().ensureActive()
-            runCatching { CacheWriter(dataSource, dataSpec, null, null).cache() }
-                .onSuccess { Timber.tag("CanvasDownload").d("Successfully cached canvas for $mediaId") }
-                .onFailure { Timber.tag("CanvasDownload").e(it, "Failed to cache canvas for $mediaId") }
-        }
+        // Canvas download disabled
     }
 
     private fun downloadStreamUrl(playbackData: YTPlayerUtils.PlaybackData): String = when {

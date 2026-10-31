@@ -102,18 +102,13 @@ fun PlayerAdvancedSettings(
     )
     val (bitPerfect, onBitPerfectChange) = rememberPreference(
         key = BitPerfectKey,
-        defaultValue = false
+        defaultValue = true
     )
     val context = LocalContext.current
     val bitPerfectHardwareAvailable = remember { BitPerfectAudio.isHardwareBitPerfectAvailable(context) }
     val (seekExtraSeconds, onSeekExtraSeconds) = rememberPreference(
         SeekExtraSeconds,
         defaultValue = false
-    )
-    val (saavnEnabled, _) = rememberPreference(EnableSaavnStreamingKey, defaultValue = false)
-    val (saavnQuality, _) = rememberEnumPreference(
-        SaavnAudioQualityKey,
-        defaultValue = SaavnAudioQuality.QUALITY_320
     )
 
     val (autoLoadMore, onAutoLoadMoreChange) = rememberPreference(
@@ -153,40 +148,7 @@ fun PlayerAdvancedSettings(
                 IosSettingsGroup(
                     title = "Audio engine",
                     items = buildList {
-                        add(IosSettingsItem(
-                            icon = painterResource(R.drawable.graphic_eq),
-                            title = { Text(stringResource(R.string.jiosaavn_settings)) },
-                            description = {
-                                Text(
-                                    if (saavnEnabled) saavnQuality.toLabel()
-                                    else stringResource(R.string.jiosaavn_streaming_disabled)
-                                )
-                            },
-                            onClick = { navController.navigate("settings/player/jio") }
-                        ))
-                        if (crossfadeEnabled) {
-                            add(IosSettingsItem(
-                                icon = painterResource(R.drawable.album),
-                                title = { Text(stringResource(R.string.crossfade_gapless)) },
-                                description = { Text(stringResource(R.string.crossfade_gapless_desc)) },
-                                trailingContent = {
-                                    Switch(
-                                        checked = crossfadeGapless,
-                                        onCheckedChange = onCrossfadeGaplessChange
-                                    )
-                                },
-                                onClick = { onCrossfadeGaplessChange(!crossfadeGapless) }
-                            ))
-                        }
-                        add(IosSettingsItem(
-                            icon = painterResource(R.drawable.library_music),
-                            title = { Text(stringResource(R.string.show_video_switch)) },
-                            description = { Text(stringResource(R.string.show_video_switch_desc)) },
-                            trailingContent = {
-                                Switch(checked = showVideoSwitch, onCheckedChange = onShowVideoSwitchChange)
-                            },
-                            onClick = { onShowVideoSwitchChange(!showVideoSwitch) }
-                        ))
+
                         add(IosSettingsItem(
                             icon = painterResource(R.drawable.crop),
                             title = { Text(stringResource(R.string.compact_player_tab_view)) },
@@ -199,18 +161,7 @@ fun PlayerAdvancedSettings(
                             },
                             onClick = { onCompactPlayerInTabViewChange(!compactPlayerInTabView) }
                         ))
-                        add(IosSettingsItem(
-                            icon = painterResource(R.drawable.library_music),
-                            title = { Text(stringResource(R.string.excluded_folders)) },
-                            description = { Text(stringResource(R.string.excluded_folders_desc)) },
-                            onClick = { navController.navigate("settings/player/local_folders") }
-                        ))
-                        add(IosSettingsItem(
-                            icon = painterResource(R.drawable.library_music),
-                            title = { Text(stringResource(R.string.network_storage)) },
-                            description = { Text(stringResource(R.string.network_storage_desc)) },
-                            onClick = { navController.navigate("settings/network_storage") }
-                        ))
+
                         add(IosSettingsItem(
                             icon = painterResource(R.drawable.history),
                             title = { Text(stringResource(R.string.history_duration)) },

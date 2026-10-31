@@ -1,11 +1,4 @@
-/**
- * Convx Project (C) 2026
- * Licensed under GPL-3.0 | See git history for contributors
- */
-
 package com.convx.music.lyrics
-
-import kotlinx.coroutines.flow.MutableStateFlow
 
 data class WordTimestamp(
     val text: String,
@@ -17,8 +10,6 @@ data class LyricsEntry(
     val time: Long,
     val text: String,
     val words: List<WordTimestamp>? = null,
-    val romanizedTextFlow: MutableStateFlow<String?> = MutableStateFlow(null),
-    val translatedTextFlow: MutableStateFlow<String?> = MutableStateFlow(null),
     val agent: String? = null,
     val isBackground: Boolean = false
 ) : Comparable<LyricsEntry> {

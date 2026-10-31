@@ -68,7 +68,7 @@ sealed interface NetworkServer {
                     Smb(id, name.trim(), uri.host, port, share, path.substringAfter('/', ""), credentials)
                 }
                 NetworkProtocol.NAVIDROME -> {
-                    val input = address.trim().let { if (it.contains("://")) it else "https://$it" }
+                    val input = address.trim().let { if (it.contains("://")) it else "http://$it" }
                     val uri = URI(input)
                     require(uri.scheme.lowercase() in setOf("https", "http") && !uri.host.isNullOrBlank()) { "Enter an HTTP or HTTPS server address" }
                     require(credentials.username.isNotBlank()) { "Enter a username" }

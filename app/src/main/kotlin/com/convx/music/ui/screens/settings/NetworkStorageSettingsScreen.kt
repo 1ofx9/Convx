@@ -83,56 +83,16 @@ fun NetworkStorageSettingsScreen(
         pageColor = AppTheme.colorScheme.background,
         horizontalPadding = 20.dp,
     ) {
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))
 
-        Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = AppTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        Button(
+            onClick = { showAdd = true },
             modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
         ) {
-            Column(Modifier.padding(20.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(AppTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.cloud),
-                            contentDescription = null,
-                            tint = AppTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
-                    Spacer(Modifier.width(14.dp))
-                    Column {
-                        Text(
-                            text = "Self-Hosted Music",
-                            style = AppTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Text(
-                            text = "Bit-perfect lossless streaming with synced lyrics",
-                            style = AppTheme.typography.bodySmall,
-                            color = AppTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                Button(
-                    onClick = { showAdd = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                ) {
-                    SymbolIcon(symbol = sf("plus"), contentDescription = null, size = 18.dp)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Add Navidrome Server", fontWeight = FontWeight.SemiBold)
-                }
-            }
+            SymbolIcon(symbol = sf("plus"), contentDescription = null, size = 18.dp)
+            Spacer(Modifier.width(8.dp))
+            Text("Add Server", fontWeight = FontWeight.SemiBold)
         }
 
         AnimatedVisibility(
@@ -141,7 +101,7 @@ fun NetworkStorageSettingsScreen(
             exit = fadeOut(),
         ) {
             status?.let { msg ->
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(10.dp))
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = AppTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
@@ -163,7 +123,7 @@ fun NetworkStorageSettingsScreen(
             }
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(16.dp))
 
         Text(
             text = "CONFIGURED SERVERS",
@@ -228,7 +188,8 @@ fun NetworkStorageSettingsScreen(
         AddServerDialog(
             onDismiss = { showAdd = false },
             onSave = { protocol, name, address, user, password, domain ->
-                viewModel.add(protocol, name, address, user, password, domain)
+                val cleanAddress = address.trim().let { if (it.contains("://")) it else "http://$it" }
+                viewModel.add(protocol, name.trim(), cleanAddress, user.trim(), password, domain.trim())
                 showAdd = false
             },
         )

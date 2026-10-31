@@ -126,7 +126,6 @@ import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder
 import androidx.navigation.NavController
-import com.convx.music.LocalListenTogetherManager
 import com.convx.music.LocalPlayerConnection
 import com.convx.music.R
 import com.convx.music.constants.AutoLoadMoreKey
@@ -134,12 +133,10 @@ import com.convx.music.constants.CrossfadeEnabledKey
 import com.convx.music.constants.ListItemHeight
 import com.convx.music.constants.PlayerBackgroundStyle
 import com.convx.music.constants.QueueEditLockKey
-import com.convx.music.constants.ShowCommentButtonKey
 import com.convx.music.constants.UseNewPlayerDesignKey
 import com.convx.music.extensions.metadata
 import com.convx.music.extensions.move
 import com.convx.music.extensions.toggleRepeatMode
-import com.convx.music.listentogether.RoomRole
 import com.convx.music.models.MediaMetadata
 import com.convx.music.ui.component.ActionPromptDialog
 import com.convx.music.ui.component.BottomSheet
@@ -152,7 +149,6 @@ import com.convx.music.ui.component.thumbnailPx
 import com.convx.music.ui.menu.PlayerMenu
 import com.convx.music.ui.menu.QueueMenu
 import com.convx.music.ui.menu.SelectionMediaMetadataMenu
-import com.convx.music.ui.screens.CommentSheet
 import com.convx.music.ui.utils.ShowMediaInfo
 import com.convx.music.utils.listItemShape
 import com.convx.music.utils.makeTimeString
@@ -288,12 +284,7 @@ fun Queue(
         }
     }
 
-    // Listen Together state (reactive)
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val listenTogetherRoleState = listenTogetherManager?.role?.collectAsState(initial = com.convx.music.listentogether.RoomRole.NONE)
-    // See Player.kt: gated on control mode, not on role.
-    val canControlTogether = listenTogetherManager?.canControl?.collectAsState(initial = true)
-    val isListenTogetherGuest = canControlTogether?.value == false
+    val isListenTogetherGuest = false
 
     val playerConnection = LocalPlayerConnection.current ?: return
     val isPlaying by playerConnection.isEffectivelyPlaying.collectAsStateWithLifecycle()
@@ -341,10 +332,7 @@ fun Queue(
         UseNewPlayerDesignKey,
         defaultValue = false
     )
-    val (showCommentButton) = rememberPreference(
-        ShowCommentButtonKey,
-        defaultValue = true
-    )
+
 
     val snackbarHostState = remember { SnackbarHostState() }
     var dismissJob: Job? by remember { mutableStateOf(null) }
@@ -358,7 +346,6 @@ fun Queue(
         playerConnection.service.sleepTimer.isActive
     }
     var sleepTimerTimeLeft by remember { mutableLongStateOf(0L) }
-    var showCommentSheet by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(sleepTimerEnabled) {
         if (sleepTimerEnabled) {
@@ -456,20 +443,7 @@ fun Queue(
                         playerBackground = playerBackground
                     )
 
-                    if (showCommentButton) {
-                        PlayerQueueButton(
-                            icon = R.drawable.chat_msg,
-                            onClick = { showCommentSheet = true },
-                            isActive = showCommentSheet,
-                            shape = middleShape,
-                            modifier = Modifier.size(buttonSize),
-                            textButtonColor = textButtonColor,
-                            iconButtonColor = iconButtonColor,
-                            iconSize = iconSize,
-                            textBackgroundColor = TextBackgroundColor,
-                            playerBackground = playerBackground
-                        )
-                    }
+
 
                     val shuffleModeEnabledInside by playerConnection.shuffleModeEnabled.collectAsStateWithLifecycle()
                     PlayerQueueButton(
@@ -1533,12 +1507,7 @@ fun Queue(
         }
     }
 
-    if (showCommentSheet) {
-        CommentSheet(
-            videoId = mediaMetadata?.id ?: "",
-            onDismiss = { showCommentSheet = false }
-        )
-    }
+
 }
 
 @Composable

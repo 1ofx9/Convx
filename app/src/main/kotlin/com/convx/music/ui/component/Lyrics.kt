@@ -124,7 +124,6 @@ import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.toBitmap
 import com.convx.music.LocalDatabase
-import com.convx.music.LocalListenTogetherManager
 import com.convx.music.LocalPlayerConnection
 import com.convx.music.R
 import com.convx.music.constants.DarkModeKey
@@ -133,59 +132,18 @@ import com.convx.music.constants.LyricsAnimationStyleKey
 import com.convx.music.constants.LyricsClickKey
 import com.convx.music.constants.LyricsGlowEffectKey
 import com.convx.music.constants.LyricsLineSpacingKey
-import com.convx.music.constants.LyricsRomanizeAsMainKey
-import com.convx.music.constants.LyricsRomanizeBelarusianKey
-import com.convx.music.constants.LyricsRomanizeBulgarianKey
-import com.convx.music.constants.LyricsRomanizeChineseKey
-import com.convx.music.constants.LyricsRomanizeCyrillicByLineKey
-import com.convx.music.constants.LyricsRomanizeHindiKey
-import com.convx.music.constants.LyricsRomanizePunjabiKey
-import com.convx.music.constants.LyricsRomanizeJapaneseKey
-import com.convx.music.constants.LyricsRomanizeKoreanKey
-import com.convx.music.constants.LyricsRomanizeKyrgyzKey
-import com.convx.music.constants.LyricsRomanizeMacedonianKey
-import com.convx.music.constants.LyricsRomanizeRussianKey
-import com.convx.music.constants.LyricsRomanizeSerbianKey
-import com.convx.music.constants.LyricsRomanizeUkrainianKey
 import com.convx.music.constants.LyricsStandardBlurKey
 import com.convx.music.constants.LyricsScrollKey
 import com.convx.music.constants.LyricsTextPositionKey
 import com.convx.music.constants.LyricsTextSizeKey
 import com.convx.music.constants.PlayerBackgroundStyle
-import com.convx.music.constants.OpenRouterApiKey
-import com.convx.music.constants.DeeplApiKey
-import com.convx.music.constants.AiProviderKey
-import com.convx.music.constants.OpenRouterBaseUrlKey
-import com.convx.music.constants.OpenRouterModelKey
-import com.convx.music.constants.TranslateLanguageKey
-import com.convx.music.constants.TranslateModeKey
-import com.convx.music.constants.DeeplFormalityKey
 import com.convx.music.constants.PlayerBackgroundStyleKey
 import com.convx.music.db.entities.LyricsEntity.Companion.LYRICS_NOT_FOUND
 import com.convx.music.lyrics.LyricsEntry
 import com.convx.music.lyrics.isSingerSectionStart
 import com.convx.music.lyrics.primaryAgentId
 import com.convx.music.lyrics.LyricsUtils.findCurrentLineIndex
-import com.convx.music.lyrics.LyricsUtils.isBelarusian
-import com.convx.music.lyrics.LyricsUtils.isBulgarian
-import com.convx.music.lyrics.LyricsUtils.isChinese
-import com.convx.music.lyrics.LyricsUtils.isHindi
-import com.convx.music.lyrics.LyricsUtils.isPunjabi
-import com.convx.music.lyrics.LyricsUtils.isJapanese
-import com.convx.music.lyrics.LyricsUtils.isKorean
-import com.convx.music.lyrics.LyricsUtils.isKyrgyz
-import com.convx.music.lyrics.LyricsUtils.isMacedonian
-import com.convx.music.lyrics.LyricsUtils.isRussian
-import com.convx.music.lyrics.LyricsUtils.isSerbian
-import com.convx.music.lyrics.LyricsUtils.isUkrainian
 import com.convx.music.lyrics.LyricsUtils.parseLyrics
-import com.convx.music.lyrics.LyricsUtils.romanizeChinese
-import com.convx.music.lyrics.LyricsUtils.romanizeHindi
-import com.convx.music.lyrics.LyricsUtils.romanizePunjabi
-import com.convx.music.lyrics.LyricsUtils.romanizeCyrillic
-import com.convx.music.lyrics.LyricsUtils.romanizeJapanese
-import com.convx.music.lyrics.LyricsUtils.romanizeKorean
-import com.convx.music.lyrics.LyricsTranslationHelper
 import com.convx.music.ui.component.shimmer.ShimmerHost
 import com.convx.music.ui.component.shimmer.TextPlaceholder
 import com.convx.music.ui.screens.settings.DarkMode
@@ -205,82 +163,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 
 /** Centers the active line about a third down the pane and settles before the next line. */
-
-@Composable
-private fun LyricsTranslationStatus(
-    status: LyricsTranslationHelper.TranslationStatus,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center,
-    ) {
-        when (status) {
-            is LyricsTranslationHelper.TranslationStatus.Translating -> {
-                TranslationStatusChip(
-                    containerColor = AppTheme.colorScheme.primaryContainer,
-                    contentColor = AppTheme.colorScheme.onPrimaryContainer,
-                    text = stringResource(R.string.ai_translating_lyrics),
-                ) {
-                    androidx.compose.material3.CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = AppTheme.colorScheme.onPrimaryContainer,
-                    )
-                }
-            }
-
-            is LyricsTranslationHelper.TranslationStatus.Error -> {
-                TranslationStatusChip(
-                    containerColor = AppTheme.colorScheme.errorContainer,
-                    contentColor = AppTheme.colorScheme.onErrorContainer,
-                    text = status.message,
-                ) {
-                    SymbolIcon(symbol = sf("exclamationmark.circle"), contentDescription = null, size = 16.dp, tint = AppTheme.colorScheme.onErrorContainer)
-                }
-            }
-
-            is LyricsTranslationHelper.TranslationStatus.Success -> {
-                TranslationStatusChip(
-                    containerColor = AppTheme.colorScheme.tertiaryContainer,
-                    contentColor = AppTheme.colorScheme.onTertiaryContainer,
-                    text = stringResource(R.string.ai_lyrics_translated),
-                ) {
-                    SymbolIcon(symbol = sf("checkmark"), contentDescription = null, size = 16.dp, tint = AppTheme.colorScheme.onTertiaryContainer)
-                }
-            }
-
-            LyricsTranslationHelper.TranslationStatus.Idle -> Unit
-        }
-    }
-}
-
-@Composable
-private fun TranslationStatusChip(
-    containerColor: Color,
-    contentColor: Color,
-    text: String,
-    indicator: @Composable () -> Unit,
-) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            indicator()
-            Text(
-                text = text,
-                style = AppTheme.typography.labelMedium,
-                color = contentColor,
-            )
-        }
-    }
-}
 
 @Composable
 private fun ShareLyricsDialog(
@@ -435,26 +317,11 @@ fun Lyrics(
     val density = LocalDensity.current
     val context = LocalContext.current
     val configuration = LocalWindowInfo.current
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val isGuest = listenTogetherManager?.isInRoom == true && !listenTogetherManager.isHost
+    val isGuest = false
 
     val lyricsTextPosition by rememberEnumPreference(LyricsTextPositionKey, LyricsPosition.LEFT)
     val changeLyrics by rememberPreference(LyricsClickKey, true)
     val scrollLyrics by rememberPreference(LyricsScrollKey, true)
-    val romanizeJapaneseLyrics by rememberPreference(LyricsRomanizeJapaneseKey, true)
-    val romanizeKoreanLyrics by rememberPreference(LyricsRomanizeKoreanKey, true)
-    val romanizeRussianLyrics by rememberPreference(LyricsRomanizeRussianKey, true)
-    val romanizeUkrainianLyrics by rememberPreference(LyricsRomanizeUkrainianKey, true)
-    val romanizeSerbianLyrics by rememberPreference(LyricsRomanizeSerbianKey, true)
-    val romanizeBulgarianLyrics by rememberPreference(LyricsRomanizeBulgarianKey, true)
-    val romanizeBelarusianLyrics by rememberPreference(LyricsRomanizeBelarusianKey, true)
-    val romanizeKyrgyzLyrics by rememberPreference(LyricsRomanizeKyrgyzKey, true)
-    val romanizeMacedonianLyrics by rememberPreference(LyricsRomanizeMacedonianKey, true)
-    val romanizeCyrillicByLine by rememberPreference(LyricsRomanizeCyrillicByLineKey, false)
-    val romanizeAsMain by rememberPreference(LyricsRomanizeAsMainKey, false)
-    val romanizeChineseLyrics by rememberPreference(LyricsRomanizeChineseKey, true)
-    val romanizeHindiLyrics by rememberPreference(LyricsRomanizeHindiKey, true)
-    val romanizePunjabiLyrics by rememberPreference(LyricsRomanizePunjabiKey, true)
     val lyricsGlowEffect by rememberPreference(LyricsGlowEffectKey, true)
     val lyricsAnimationStyle by rememberEnumPreference(LyricsAnimationStyleKey, LyricsAnimationStyle.APPLE_V2)
     val lyricsFontSelection by rememberPreference(com.convx.music.constants.LyricsFontKey, "default")
@@ -462,15 +329,6 @@ fun Lyrics(
     val lyricsTextSize by rememberPreference(LyricsTextSizeKey, 30f)
     val lyricsLineSpacing by rememberPreference(LyricsLineSpacingKey, 1.3f)
     val lyricsStandardBlur by rememberPreference(LyricsStandardBlurKey, true)
-    
-    val openRouterApiKey by rememberPreference(OpenRouterApiKey, "")
-    val deeplApiKey by rememberPreference(DeeplApiKey, "")
-    val aiProvider by rememberPreference(AiProviderKey, "OpenRouter")
-    val openRouterBaseUrl by rememberPreference(OpenRouterBaseUrlKey, "https://openrouter.ai/api/v1/chat/completions")
-    val openRouterModel by rememberPreference(OpenRouterModelKey, "google/gemini-2.5-flash-lite")
-    val translateLanguage by rememberPreference(TranslateLanguageKey, "en")
-    val translateMode by rememberPreference(TranslateModeKey, "Literal")
-    val deeplFormality by rememberPreference(DeeplFormalityKey, "default")
     
     val scope = rememberCoroutineScope()
 
@@ -490,76 +348,20 @@ fun Lyrics(
         if (darkTheme == DarkMode.AUTO) isSystemInDarkTheme else darkTheme == DarkMode.ON
     }
 
-    val lines = remember(lyrics, scope) {
+    val lines = remember(lyrics) {
         if (lyrics == null || lyrics == LYRICS_NOT_FOUND) {
             emptyList()
         } else {
             val hasTimestamps = lyrics.startsWith("[")
-            val isRussianLyrics = romanizeRussianLyrics && !romanizeCyrillicByLine && isRussian(lyrics)
-            val isUkrainianLyrics = romanizeUkrainianLyrics && !romanizeCyrillicByLine && isUkrainian(lyrics)
-            val isSerbianLyrics = romanizeSerbianLyrics && !romanizeCyrillicByLine && isSerbian(lyrics)
-            val isBulgarianLyrics = romanizeBulgarianLyrics && !romanizeCyrillicByLine && isBulgarian(lyrics)
-            val isBelarusianLyrics = romanizeBelarusianLyrics && !romanizeCyrillicByLine && isBelarusian(lyrics)
-            val isKyrgyzLyrics = romanizeKyrgyzLyrics && !romanizeCyrillicByLine && isKyrgyz(lyrics)
-            val isMacedonianLyrics = romanizeMacedonianLyrics && !romanizeCyrillicByLine && isMacedonian(lyrics)
-
             val entries = if (hasTimestamps) {
                 parseLyrics(lyrics)
             } else {
                 lyrics.lines().mapIndexed { index, line -> LyricsEntry(index * 100L, line) }
             }
-
-            val romanizedEntries = entries.map { entry ->
-                val text = entry.text
-                val newEntry = if (hasTimestamps) {
-                    LyricsEntry(
-                        time = entry.time,
-                        text = text,
-                        words = entry.words,
-                        agent = entry.agent,
-                        isBackground = entry.isBackground,
-                    )
-                } else {
-                    entry
-                }
-
-                if (romanizeJapaneseLyrics && isJapanese(text) && !isChinese(text)) {
-                    scope.launch { newEntry.romanizedTextFlow.value = romanizeJapanese(text) }
-                }
-
-                if (romanizeKoreanLyrics && isKorean(text)) {
-                    scope.launch { newEntry.romanizedTextFlow.value = romanizeKorean(text) }
-                }
-
-                if (romanizeRussianLyrics && (if (romanizeCyrillicByLine) isRussian(text) else isRussianLyrics)) {
-                    scope.launch { newEntry.romanizedTextFlow.value = romanizeCyrillic(text) }
-                } else if (romanizeUkrainianLyrics && (if (romanizeCyrillicByLine) isUkrainian(text) else isUkrainianLyrics)) {
-                    scope.launch { newEntry.romanizedTextFlow.value = romanizeCyrillic(text) }
-                } else if (romanizeSerbianLyrics && (if (romanizeCyrillicByLine) isSerbian(text) else isSerbianLyrics)) {
-                    scope.launch { newEntry.romanizedTextFlow.value = romanizeCyrillic(text) }
-                } else if (romanizeBulgarianLyrics && (if (romanizeCyrillicByLine) isBulgarian(text) else isBulgarianLyrics)) {
-                    scope.launch { newEntry.romanizedTextFlow.value = romanizeCyrillic(text) }
-                } else if (romanizeBelarusianLyrics && (if (romanizeCyrillicByLine) isBelarusian(text) else isBelarusianLyrics)) {
-                    scope.launch { newEntry.romanizedTextFlow.value = romanizeCyrillic(text) }
-                } else if (romanizeKyrgyzLyrics && (if (romanizeCyrillicByLine) isKyrgyz(text) else isKyrgyzLyrics)) {
-                    scope.launch { newEntry.romanizedTextFlow.value = romanizeCyrillic(text) }
-                } else if (romanizeMacedonianLyrics && (if (romanizeCyrillicByLine) isMacedonian(text) else isMacedonianLyrics)) {
-                    scope.launch { newEntry.romanizedTextFlow.value = romanizeCyrillic(text) }
-                } else if (romanizeChineseLyrics && isChinese(text)) {
-                    scope.launch { newEntry.romanizedTextFlow.value = romanizeChinese(text) }
-                } else if (romanizeHindiLyrics && isHindi(text)) {
-                    scope.launch { newEntry.romanizedTextFlow.value = romanizeHindi(text) }
-                } else if (romanizePunjabiLyrics && isPunjabi(text)) {
-                    scope.launch { newEntry.romanizedTextFlow.value = romanizePunjabi(text) }
-                }
-
-                newEntry
-            }
-
             if (hasTimestamps) {
-                listOf(LyricsEntry.HEAD_LYRICS_ENTRY) + romanizedEntries
+                listOf(LyricsEntry.HEAD_LYRICS_ENTRY) + entries
             } else {
-                romanizedEntries
+                entries
             }
         }
     }
@@ -567,61 +369,6 @@ fun Lyrics(
         remember(lyrics) {
             !lyrics.isNullOrEmpty() && lyrics.startsWith("[")
         }
-
-    val translationStatus by LyricsTranslationHelper.status.collectAsStateWithLifecycle()
-    val hasActiveTranslations by LyricsTranslationHelper.hasActiveTranslations.collectAsStateWithLifecycle()
-    
-    DisposableEffect(Unit) {
-        LyricsTranslationHelper.setCompositionActive(true)
-        onDispose {
-            LyricsTranslationHelper.setCompositionActive(false)
-            LyricsTranslationHelper.cancelTranslation()
-        }
-    }
-    
-    LaunchedEffect(lines, lyricsEntity, translateLanguage, translateMode) {
-        if (lines.isNotEmpty() && lyricsEntity != null) {
-            LyricsTranslationHelper.loadTranslationsFromDatabase(
-                lyrics = lines,
-                lyricsEntity = lyricsEntity,
-                targetLanguage = translateLanguage,
-                mode = translateMode
-            )
-        }
-    }
-    
-    LaunchedEffect(showLyrics, lines.size) {
-        LyricsTranslationHelper.manualTrigger.collect {
-            val effectiveApiKey = if (aiProvider == "DeepL") deeplApiKey else openRouterApiKey
-            if (showLyrics && lines.isNotEmpty() && effectiveApiKey.isNotBlank()) {
-                LyricsTranslationHelper.translateLyrics(
-                    lyrics = lines,
-                    targetLanguage = translateLanguage,
-                    apiKey = openRouterApiKey,
-                    baseUrl = openRouterBaseUrl,
-                    model = openRouterModel,
-                    mode = translateMode,
-                    scope = scope,
-                    context = context,
-                    provider = aiProvider,
-                    deeplApiKey = deeplApiKey,
-                    deeplFormality = deeplFormality,
-                    useStreaming = true,
-                    songId = currentSong?.id ?: "",
-                    database = database
-                )
-            } else if (effectiveApiKey.isBlank()) {
-                Toast.makeText(context, context.getString(R.string.ai_api_key_required), Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    // The helper owns the clear request; collect it here to update this screen.
-    LaunchedEffect(Unit) {
-        LyricsTranslationHelper.clearTranslationsTrigger.collect {
-            lines.forEach { it.translatedTextFlow.value = null }
-        }
-    }
 
     // Use one accent color for the lyric text and glow.
     val expressiveAccent = when (playerBackground) {
@@ -823,13 +570,7 @@ fun Lyrics(
             .fillMaxSize()
             .padding(bottom = 12.dp)
     ) {
-        LyricsTranslationStatus(
-            status = translationStatus,
-            modifier = Modifier
-                .fillMaxWidth()
-                .zIndex(1f)
-                .padding(top = 56.dp),
-        )
+
 
         if (lyrics == LYRICS_NOT_FOUND) {
             Box(
@@ -852,8 +593,7 @@ fun Lyrics(
                 fontFamily = lyricsFontFamily,
                 fontSize = lyricsTextSize,
                 lineSpacing = lyricsLineSpacing,
-                showTranslation = hasActiveTranslations,
-                lines = lines,
+                                lines = lines,
                 positionMs = { (sliderPositionProvider() ?: playerConnection.player.currentPosition) + lyricsOffset },
                 useBlur = lyricsStandardBlur,
                 isSynced = isSynced,
@@ -993,22 +733,8 @@ fun Lyrics(
                             distanceFromCurrent = kotlin.math.abs(index - displayedCurrentLineIndex),
                             lyricsTextPosition = lyricsTextPosition,
                             textColor = textColor,
-                            showRomanized = currentSong?.romanizeLyrics == true && (
-                                    romanizeJapaneseLyrics ||
-                                            romanizeKoreanLyrics ||
-                                            romanizeRussianLyrics ||
-                                            romanizeUkrainianLyrics ||
-                                            romanizeSerbianLyrics ||
-                                            romanizeBulgarianLyrics ||
-                                            romanizeBelarusianLyrics ||
-                                            romanizeKyrgyzLyrics ||
-                                            romanizeMacedonianLyrics ||
-                                            romanizeChineseLyrics ||
-                                            romanizeHindiLyrics ||
-                                            romanizePunjabiLyrics),
                             textSize = lyricsTextSize,
                             lineSpacing = lyricsLineSpacing,
-                            showTranslated = hasActiveTranslations,
                             isAutoScrollActive = isAutoScrollEnabled,
                             isSelectionModeActive = isSelectionModeActive,
                             isSelected = isSelected,
@@ -1062,20 +788,7 @@ fun Lyrics(
                             distanceFromCurrent = kotlin.math.abs(index - displayedCurrentLineIndex),
                             lyricsTextPosition = lyricsTextPosition,
                             textColor = textColor,
-                            showRomanized = currentSong?.romanizeLyrics == true && (
-                                    romanizeJapaneseLyrics ||
-                                            romanizeKoreanLyrics ||
-                                            romanizeRussianLyrics ||
-                                            romanizeUkrainianLyrics ||
-                                            romanizeSerbianLyrics ||
-                                            romanizeBulgarianLyrics ||
-                                            romanizeBelarusianLyrics ||
-                                            romanizeKyrgyzLyrics ||
-                                            romanizeMacedonianLyrics ||
-                                            romanizeChineseLyrics ||
-                                            romanizeHindiLyrics ||
-                                            romanizePunjabiLyrics),
-                            showTranslated = hasActiveTranslations,
+                            showTranslated = false,
                             isAutoScrollActive = isAutoScrollEnabled,
                             isSelectionModeActive = isSelectionModeActive,
                             isSelected = isSelected,
@@ -1226,14 +939,9 @@ fun Lyrics(
                             color = expressiveAccent,
                         )
 
-                        val romanizedTextState by item.romanizedTextFlow.collectAsStateWithLifecycle()
-                        val romanizedText = romanizedTextState
-                        val isRomanizedAvailable = romanizedText != null
-                        
-                        val mainText = if (romanizeAsMain && isRomanizedAvailable) romanizedText else item.text
-                        val subText = if (romanizeAsMain && isRomanizedAvailable) item.text else romanizedText
-                        
-                        val hasWordTimings = if (romanizeAsMain && isRomanizedAvailable) false else item.words?.isNotEmpty() == true
+                        val mainText = item.text
+                        val subText: String? = null
+                        val hasWordTimings = item.words?.isNotEmpty() == true
                         
                         // Word-by-word animation styles
                         if (hasWordTimings && lyricsAnimationStyle == LyricsAnimationStyle.NONE) {
@@ -1646,24 +1354,7 @@ fun Lyrics(
                                     }
                                 }
                                 
-                                // Translated text support for APPLE_V2
-                                if (hasActiveTranslations) {
-                                    val translatedText by item.translatedTextFlow.collectAsStateWithLifecycle()
-                                    translatedText?.let { translated ->
-                                        Text(
-                    fontFamily = lyricsFontFamily,
-                                            text = translated,
-                                            fontSize = (lyricsTextSize * 0.7f).sp,
-                                            color = expressiveAccent.copy(alpha = if (isActiveLine) 0.8f else 0.3f),
-                                            textAlign = agentTextAlign,
-                                            // Match the translation typography used in the player.
-                                            fontWeight = FontWeight.Bold,
-                                            letterSpacing = (lyricsTextSize * 0.7f * -0.012f).sp,
-                                            modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
-                                            lineHeight = (lyricsTextSize * 0.7f * lyricsLineSpacing.coerceAtMost(1.3f)).sp
-                                        )
-                                    }
-                                }
+
                             }
                         } else if (lyricsAnimationStyle == LyricsAnimationStyle.LYRICS_V2) {
                             LyricsLineV2(
@@ -1676,8 +1367,7 @@ fun Lyrics(
                                 inactiveAlpha = 0.35f, // Sync with the reference app inactive alpha
                                 baseFontSize = lyricsTextSize,
                                 lineHeight = lyricsTextSize * lyricsLineSpacing.coerceAtMost(1.3f),
-                                showTranslated = hasActiveTranslations,
-                                agentAlignment = agentAlignment,
+                                                                agentAlignment = agentAlignment,
                                 agentTextAlign = agentTextAlign
                             )
                         } else if (isActiveLine && lyricsGlowEffect) {
@@ -1778,52 +1468,7 @@ fun Lyrics(
                                 modifier = Modifier.vibrantChrome()
                             )
                         }
-                        if (currentSong?.romanizeLyrics == true
-                            && (romanizeJapaneseLyrics ||
-                                    romanizeKoreanLyrics ||
-                                    romanizeRussianLyrics ||
-                                    romanizeUkrainianLyrics ||
-                                    romanizeSerbianLyrics ||
-                                    romanizeBulgarianLyrics ||
-                                    romanizeBelarusianLyrics ||
-                                    romanizeKyrgyzLyrics ||
-                                    romanizeMacedonianLyrics ||
-                                    romanizeChineseLyrics ||
-                                    romanizeHindiLyrics ||
-                                    romanizePunjabiLyrics)) {
-                            subText?.let { text ->
-                                Text(
-                    fontFamily = lyricsFontFamily,
-                                    text = text,
-                                    fontSize = 18.sp,
-                                    color = expressiveAccent.copy(alpha = 0.6f),
-                                    textAlign = agentTextAlign,
-                                    fontWeight = FontWeight.Normal,
-                                    modifier = Modifier.padding(top = 2.dp)
-                                )
-                            }
-                        }
-                        
-                        // These animation styles render translations themselves.
-                        if (hasActiveTranslations && 
-                            lyricsAnimationStyle != LyricsAnimationStyle.LYRICS_V2 && 
-                            lyricsAnimationStyle != LyricsAnimationStyle.APPLE_V2) {
-                            val translatedText by item.translatedTextFlow.collectAsStateWithLifecycle()
-                            translatedText?.let { translated ->
-                                        Text(
-                    fontFamily = lyricsFontFamily,
-                                            text = translated,
-                                            fontSize = (lyricsTextSize * 0.7f).sp,
-                                            color = expressiveAccent.copy(alpha = 0.8f),
-                                            textAlign = agentTextAlign,
-                                            // Match the translation typography used in the player.
-                                            fontWeight = FontWeight.Bold,
-                                            letterSpacing = (lyricsTextSize * 0.7f * -0.012f).sp,
-                                            modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
-                                    lineHeight = (lyricsTextSize * 0.7f * lyricsLineSpacing.coerceAtMost(1.3f)).sp
-                                )
-                            }
-                        }
+
                     }
                 }
             }

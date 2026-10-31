@@ -35,9 +35,6 @@
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
 
-    <!-- Microphone feature for music recognition (not required) -->
-    <uses-feature android:name="android.hardware.microphone" android:required="false" />
-
     <!-- Required for installing downloaded updates. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
@@ -64,6 +61,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="false"
         android:theme="@style/Theme.Convx"
+        android:usesCleartextTraffic="true"
         tools:targetApi="tiramisu">
         <uses-library
             android:name="org.apache.http.legacy"
@@ -473,10 +471,6 @@
             </intent-filter>
         </service>
 
-        <!-- Receiver for Listen Together notification actions (Approve/Reject) -->
-        <receiver
-            android:name=".listentogether.ListenTogetherActionReceiver"
-            android:exported="false" />
 
         <receiver
             android:name="androidx.media3.session.MediaButtonReceiver"

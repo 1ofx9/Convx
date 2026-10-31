@@ -29,8 +29,11 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.convx.music.constants.AppLanguageKey
 import com.convx.music.constants.DisableScreenshotKey
+import com.convx.music.constants.HideSystemBarsKey
 import com.convx.music.constants.SYSTEM_DEFAULT
 import com.convx.music.constants.StopMusicOnTaskClearKey
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.convx.music.db.MusicDatabase
 import com.convx.music.history.HistoryLocalDataSource
 import com.convx.music.playback.DownloadUtil
@@ -69,11 +72,7 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var historyDataSource: dagger.Lazy<HistoryLocalDataSource>
 
-    @Inject
-    lateinit var listenTogetherManager: dagger.Lazy<com.convx.music.listentogether.ListenTogetherManager>
 
-    @Inject
-    lateinit var partyManager: dagger.Lazy<com.convx.music.jam.JamManager>
 
     @Inject
     lateinit var playbackServiceConnector: PlaybackServiceConnector
@@ -179,6 +178,22 @@ class MainActivity : ComponentActivity() {
                 }
         }
 
+        lifecycleScope.launch {
+            val insetsController = WindowInsetsControllerCompat(window, window.decorView)
+            dataStore.data
+                .map { it[HideSystemBarsKey] ?: false }
+                .distinctUntilChanged()
+                .collectLatest { hideBars ->
+                    if (hideBars) {
+                        insetsController.systemBarsBehavior =
+                            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                        insetsController.hide(WindowInsetsCompat.Type.systemBars())
+                    } else {
+                        insetsController.show(WindowInsetsCompat.Type.systemBars())
+                    }
+                }
+        }
+
         // Cold launch from the launcher only (WelcomeActivity hands off with this extra);
         // notification/deep-link opens go straight to the app.
         val playIntro = savedInstanceState == null && intent.getBooleanExtra(EXTRA_PLAY_INTRO, false)
@@ -200,6 +215,6 @@ class MainActivity : ComponentActivity() {
     }
 
     internal val deepLinkRouter by lazy {
-        AppIntentRouter(this, { playerConnection }, listenTogetherManager, partyManager)
+        AppIntentRouter(this, { playerConnection })
     }
 }

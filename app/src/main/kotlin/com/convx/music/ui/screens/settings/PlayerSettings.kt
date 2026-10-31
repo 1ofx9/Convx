@@ -243,19 +243,7 @@ fun PlayerSettings(
                     )
                 )
 
-                Spacer(modifier = Modifier.height(27.dp))
 
-                IosSettingsGroup(
-                    title = "Local music",
-                    items = buildList {
-                        add(IosSettingsItem(
-                            icon = painterResource(R.drawable.music_note),
-                            title = { Text(stringResource(R.string.scan_local_files)) },
-                            description = { Text(stringResource(R.string.scan_local_files_desc)) },
-                            onClick = { navController.navigate("settings/scan_music") }
-                        ))
-                    }
-                )
 
                 Spacer(modifier = Modifier.height(27.dp))
 

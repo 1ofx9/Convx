@@ -58,11 +58,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.Player
 import coil3.compose.AsyncImage
-import com.convx.music.LocalListenTogetherManager
 import com.convx.music.LocalPlayerConnection
 import com.convx.music.R
 import com.convx.music.constants.*
-import com.convx.music.listentogether.ListenTogetherManager
 import com.convx.music.models.MediaMetadata
 import com.convx.music.playback.CastConnectionHandler
 import com.convx.music.playback.PlayerConnection
@@ -115,8 +113,7 @@ fun AppleMiniPlayer(
     val swipeThumbnailPref by rememberPreference(SwipeThumbnailKey, true)
     
     // Disable swipe for Listen Together guests
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
+    val isListenTogetherGuest = false
     val swipeThumbnail = swipeThumbnailPref && !isListenTogetherGuest
     
     val layoutDirection = LocalLayoutDirection.current

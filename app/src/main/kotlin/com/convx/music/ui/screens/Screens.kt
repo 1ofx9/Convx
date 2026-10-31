@@ -52,13 +52,6 @@ sealed class Screens(
         route = "radio",
         icon = R.drawable.radio,
     )
-
-    object ListenTogether : Screens(
-        titleId = R.string.together,
-        route = "listen_together",
-        icon = R.drawable.accord_groups,
-    )
-
     /**
      * Flat, alphabetised list of every song on the device. Only ever a tab in local-only
      * mode -- with YouTube on, "all songs" has no bounded meaning.

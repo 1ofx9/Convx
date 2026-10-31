@@ -57,12 +57,10 @@ import androidx.navigation.NavController
 import com.music.innertube.YouTube
 import com.convx.music.LocalDatabase
 import com.convx.music.LocalDownloadUtil
-import com.convx.music.LocalListenTogetherManager
 import com.convx.music.LocalPlayerConnection
 import com.convx.music.R
 import com.convx.music.constants.ListItemHeight
 import com.convx.music.extensions.toggleRepeatMode
-import com.convx.music.listentogether.RoomRole
 import com.convx.music.models.MediaMetadata
 import com.convx.music.playback.ExoDownloadService
 import com.convx.music.ui.component.BottomSheetState
@@ -109,11 +107,7 @@ fun OldPlayerMenu(
 
     val download by LocalDownloadUtil.current.get().getDownload(mediaMetadata.id).collectAsState(initial = null)
 
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val listenTogetherRoleState = listenTogetherManager?.role?.collectAsState(initial = RoomRole.NONE)
-    // See Player.kt: gated on control mode, not on role.
-    val canControlTogether = listenTogetherManager?.canControl?.collectAsState(initial = true)
-    val isListenTogetherGuest = canControlTogether?.value == false
+    val isListenTogetherGuest = false
 
     val currentSong by playerConnection.currentSong.collectAsState(initial = null)
     val librarySong by database.song(mediaMetadata.id).collectAsState(initial = null)
@@ -126,8 +120,7 @@ fun OldPlayerMenu(
     }
 
     var showChoosePlaylistDialog by rememberSaveable { mutableStateOf(false) }
-    var showListenTogetherDialog by rememberSaveable { mutableStateOf(false) }
-    var showSelectArtistDialog by rememberSaveable { mutableStateOf(false) }
+        var showSelectArtistDialog by rememberSaveable { mutableStateOf(false) }
     var showPitchTempoDialog by rememberSaveable { mutableStateOf(false) }
 
     AddToPlaylistDialog(
@@ -143,12 +136,7 @@ fun OldPlayerMenu(
         onDismiss = { showChoosePlaylistDialog = false }
     )
 
-    ListenTogetherDialog(
-        visible = showListenTogetherDialog,
-        mediaMetadata = mediaMetadata,
-        onDismiss = { showListenTogetherDialog = false }
-    )
-
+    
     if (showSelectArtistDialog) {
         ListDialog(onDismiss = { showSelectArtistDialog = false }) {
             items(artists, key = { it.id!! }) { artist ->
@@ -280,7 +268,7 @@ fun OldPlayerMenu(
                         }
                     )
                 ),
-                columns = if (isListenTogetherGuest) 2 else 3,
+                columns = 3,
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
             )
         }
@@ -501,39 +489,6 @@ fun OldPlayerMenu(
                             }
                         )
                     )
-                }
-            )
-        }
-
-        item { Spacer(modifier = Modifier.height(12.dp)) }
-
-        // Listen together
-        item {
-            IosMenuGroup(
-                items = buildList {
-                    add(
-                        IosMenuItemData(
-                            title = { Text(text = stringResource(R.string.listen_together)) },
-                            icon = {
-                                SymbolIcon(symbol = sf("person.2.fill"), contentDescription = null, size = 24.dp)
-                            },
-                            onClick = { onDismiss(); navController.navigate("listen_together/party") }
-                        )
-                    )
-                    if (isListenTogetherGuest) {
-                        add(
-                            IosMenuItemData(
-                                title = { Text(text = stringResource(R.string.resync)) },
-                                icon = {
-                                    SymbolIcon(symbol = sf("arrow.counterclockwise"), contentDescription = null, size = 24.dp)
-                                },
-                                onClick = {
-                                    listenTogetherManager.requestSync()
-                                    onDismiss()
-                                }
-                            )
-                        )
-                    }
                 }
             )
         }

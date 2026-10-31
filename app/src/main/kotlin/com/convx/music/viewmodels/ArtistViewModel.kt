@@ -82,30 +82,11 @@ class ArtistViewModel @Inject constructor(
                 com.convx.music.utils.AppleArt.prefetch(context, com.convx.music.utils.AppleArtQuery.Artist(name))
             }
         }
-        viewModelScope.launch {
-            context.dataStore.data
-                .map {
-                    Triple(
-                        it[HideExplicitKey] ?: false,
-                        (it[HideVideoSongsKey] ?: false) || (it[DataSaverEnabledKey] ?: false),
-                        it[HideYoutubeShortsKey] ?: false
-                    )
-                }
-                .distinctUntilChanged()
-                .collect {
-                    fetchArtistsFromYTM()
-                }
-        }
+
     }
 
     fun fetchArtistsFromYTM() {
-        viewModelScope.launch {
-            val page = PageCaches.artistPages.get(artistId) {
-                YouTube.artist(artistId).onFailure { reportException(it) }.getOrNull()
-            } ?: return@launch
-            com.convx.music.utils.AppleArt.prefetch(context, com.convx.music.utils.AppleArtQuery.Artist(page.artist.title))
-            artistPage = page.filtered()
-        }
+        // Disabled: App is purely self-hosted (Navidrome / Subsonic)
     }
 
     fun fetchArtistSignature(name: String) {

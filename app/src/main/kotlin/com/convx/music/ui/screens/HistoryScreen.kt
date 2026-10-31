@@ -350,7 +350,11 @@ fun HistoryScreen(
                                                 playerConnection.togglePlayPause()
                                             } else {
                                                 playerConnection.playQueue(
-                                                    YouTubeQueue.radio(song.toMediaMetadata())
+                                                    ListQueue(
+                                                        title = "History",
+                                                        items = section.songs.map { it.toMediaItem() },
+                                                        startIndex = index
+                                                    )
                                                 )
                                             }
                                         },

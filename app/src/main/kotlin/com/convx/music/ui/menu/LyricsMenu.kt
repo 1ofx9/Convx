@@ -79,16 +79,7 @@ import com.convx.music.ui.component.LyricsProviderSelector
 import com.convx.music.ui.component.LyricsProviderMenu
 import com.convx.music.ui.component.TextFieldDialog
 import com.convx.music.viewmodels.LyricsMenuViewModel
-import com.convx.music.constants.OpenRouterApiKey
-import com.convx.music.constants.DeeplApiKey
-import com.convx.music.constants.AiProviderKey
-import com.convx.music.constants.TranslateLanguageKey
-import com.convx.music.constants.TranslateModeKey
 import com.convx.music.constants.VocalSuppressionKey
-import com.convx.music.constants.OpenRouterBaseUrlKey
-import com.convx.music.constants.OpenRouterModelKey
-import com.convx.music.constants.DeeplFormalityKey
-import com.convx.music.lyrics.LyricsTranslationHelper
 import com.convx.music.utils.rememberPreference
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -105,20 +96,7 @@ fun LyricsMenu(
     val context = LocalContext.current
     val database = LocalDatabase.current.get()
     
-    val openRouterApiKey by rememberPreference(OpenRouterApiKey, "")
-    val deeplApiKey by rememberPreference(DeeplApiKey, "")
-    val aiProvider by rememberPreference(AiProviderKey, "OpenRouter")
-    val translateLanguage by rememberPreference(TranslateLanguageKey, "en")
-    val translateMode by rememberPreference(TranslateModeKey, "Literal")
-    val openRouterBaseUrl by rememberPreference(OpenRouterBaseUrlKey, "https://openrouter.ai/api/v1/chat/completions")
-    val openRouterModel by rememberPreference(OpenRouterModelKey, "google/gemini-2.5-flash-lite")
-    val deeplFormality by rememberPreference(DeeplFormalityKey, "default")
 
-    val hasApiKey = if (aiProvider == "DeepL") deeplApiKey.isNotBlank() else openRouterApiKey.isNotBlank()
-
-    // Observe the authoritative translation-active state from the singleton; this persists
-    // correctly across menu open/close cycles and avoids the lyricsProvider() race condition.
-    val hasTranslations by LyricsTranslationHelper.hasActiveTranslations.collectAsStateWithLifecycle()
     val (savedVocalSuppression, saveVocalSuppression) = rememberPreference(VocalSuppressionKey, 0f)
     var vocalSuppression by rememberSaveable(mediaMetadataProvider().id) {
         mutableFloatStateOf(savedVocalSuppression)
@@ -369,15 +347,7 @@ fun LyricsMenu(
         }
     }
 
-    var showRomanization by rememberSaveable { mutableStateOf(false) }
-    var isChecked by remember { mutableStateOf(songProvider()?.romanizeLyrics ?: true) }
-
     var lyricsOffset by rememberSaveable { mutableIntStateOf(songProvider()?.lyricsOffset ?: 0) }
-
-    // Refresh the setting when the active song changes.
-    LaunchedEffect(songProvider()) {
-        isChecked = songProvider()?.romanizeLyrics ?: true
-    }
 
     LaunchedEffect(songProvider()) {
         lyricsOffset = songProvider()?.lyricsOffset ?: 0
@@ -471,105 +441,25 @@ fun LyricsMenu(
 
         item {
             IosMenuGroup(
-                items = buildList {
-                    if (hasApiKey) {
-                        add(
-                            IosMenuItemData(
-                                title = { Text(stringResource(R.string.ai_lyrics_translation)) },
-                                icon = {
-                                    SymbolIcon(symbol = sf("character.bubble"), contentDescription = null)
-                                },
-                                onClick = {
-                                    if (hasTranslations) {
-                                        lyricsProvider()?.let { lyrics ->
-                                            val clearedLyrics = LyricsTranslationHelper.clearTranslations(lyrics)
-                                            database.query {
-                                                upsert(clearedLyrics)
-                                            }
-                                            // Resets hasActiveTranslations and clears in-memory translations
-                                            LyricsTranslationHelper.triggerClearTranslations()
-                                        }
-                                    } else {
-                                        LyricsTranslationHelper.triggerManualTranslation()
-                                    }
-                                },
-                                trailingContent = {
-                                    Switch(
-                                        checked = hasTranslations,
-                                        onCheckedChange = { newCheckedState ->
-                                            if (newCheckedState) {
-                                                // Enable translations – hasActiveTranslations updates when done
-                                                LyricsTranslationHelper.triggerManualTranslation()
-                                            } else {
-                                                // Disable translations – triggerClearTranslations resets hasActiveTranslations
-                                                lyricsProvider()?.let { lyrics ->
-                                                    val clearedLyrics = LyricsTranslationHelper.clearTranslations(lyrics)
-                                                    database.query {
-                                                        upsert(clearedLyrics)
-                                                    }
-                                                    LyricsTranslationHelper.triggerClearTranslations()
-                                                }
-                                            }
-                                        },
-                                    )
-                                },
+                items = listOf(
+                    IosMenuItemData(
+                        title = { Text(stringResource(R.string.lyrics_offset)) },
+                        icon = {
+                            SymbolIcon(symbol = sf("forward.fill"), contentDescription = null)
+                        },
+                        onClick = {
+                            onDismiss()
+                            onShowOffsetDialog()
+                        },
+                        trailingContent = {
+                            Text(
+                                text = "${if (lyricsOffset >= 0) "+" else ""}${lyricsOffset}ms",
+                                style = AppTheme.typography.bodyMedium,
+                                color = AppTheme.colorScheme.onSurfaceVariant
                             )
-                        )
-                    }
-                    
-                    add(
-                        IosMenuItemData(
-                            title = { Text(stringResource(R.string.lyrics_offset)) },
-                            icon = {
-                                SymbolIcon(symbol = sf("forward.fill"), contentDescription = null)
-                            },
-                            onClick = {
-                                onDismiss()
-                                onShowOffsetDialog()
-                            },
-                            trailingContent = {
-                                Text(
-                                    text = "${if (lyricsOffset >= 0) "+" else ""}${lyricsOffset}ms",
-                                    style = AppTheme.typography.bodyMedium,
-                                    color = AppTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        )
+                        }
                     )
-                    
-                    add(
-                        IosMenuItemData(
-                            title = { Text(text = stringResource(R.string.romanize_current_track)) },
-                            icon = {
-                                Icon(
-                                    painter = painterResource(R.drawable.language_korean_latin),
-                                    contentDescription = null,
-                                )
-                            },
-                            onClick = {
-                                isChecked = !isChecked
-                                songProvider()?.let { song ->
-                                    database.query {
-                                        upsert(song.copy(romanizeLyrics = isChecked))
-                                    }
-                                }
-                            },
-                            trailingContent = {
-                                Switch(
-                                    checked = isChecked,
-                                    onCheckedChange = { newCheckedState ->
-                                        isChecked = newCheckedState
-                                        songProvider()?.let { song ->
-                                            database.query {
-                                                upsert(song.copy(romanizeLyrics = newCheckedState))
-                                            }
-                                        }
-                                    }
-                                )
-                            }
-                        )
-                    )
-                }
+                )
             )
         }
     }

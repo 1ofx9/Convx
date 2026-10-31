@@ -15,8 +15,6 @@ import androidx.room.Room
 import com.convx.music.constants.MaxSongCacheSizeKey
 import com.convx.music.db.InternalDatabase
 import com.convx.music.db.MusicDatabase
-import com.convx.music.listentogether.ListenTogetherClient
-import com.convx.music.listentogether.ListenTogetherManager
 import com.convx.music.utils.dataStore
 import com.convx.music.utils.get
 import dagger.Module
@@ -97,17 +95,5 @@ object AppModule {
         )
     }
 
-    @Singleton
-    @Provides
-    fun provideListenTogetherClient(
-        @ApplicationContext context: Context,
-    ): ListenTogetherClient = ListenTogetherClient(context)
 
-    @Singleton
-    @Provides
-    fun provideListenTogetherManager(
-        @ApplicationContext context: Context,
-        client: ListenTogetherClient,
-        playerConnectionBridge: com.convx.music.listentogether.ListenTogetherPlayerConnectionBridge,
-    ): ListenTogetherManager = ListenTogetherManager(client, context, playerConnectionBridge)
 }

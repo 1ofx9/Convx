@@ -129,7 +129,6 @@ import coil3.request.crossfade
 import coil3.size.Size as CoilSize
 import coil3.toBitmap
 import com.convx.music.LocalDatabase
-import com.convx.music.LocalListenTogetherManager
 import com.convx.music.LocalPlayerConnection
 import com.convx.music.R
 import com.convx.music.ui.player.customize.PlayerGlyph
@@ -146,7 +145,6 @@ import com.convx.music.constants.ThumbnailCornerRadius
 import com.convx.music.ui.component.shapes.ContinuousRoundedRectangle
 import com.convx.music.constants.UseNewMiniPlayerDesignKey
 import com.convx.music.db.entities.ArtistEntity
-import com.convx.music.listentogether.ListenTogetherManager
 import com.convx.music.models.MediaMetadata
 import com.convx.music.playback.CastConnectionHandler
 import com.convx.music.playback.PlayerConnection
@@ -268,8 +266,7 @@ private fun NewMiniPlayer(
     val swipeThumbnailPref by rememberPreference(SwipeThumbnailKey, true)
     
     // Disable swipe for Listen Together guests
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
+    val isListenTogetherGuest = false
     val swipeThumbnail = swipeThumbnailPref && !isListenTogetherGuest
 
     val layoutDirection = LocalLayoutDirection.current
@@ -485,8 +482,7 @@ private fun NewMiniPlayer(
                     mediaMetadata = mediaMetadata,
                     primaryColor = primaryColor,
                     outlineColor = outlineColor,
-                    listenTogetherManager = listenTogetherManager,
-                    compact = true
+                                        compact = true
                 )
 
                 Spacer(modifier = Modifier.width(4.dp))
@@ -562,13 +558,12 @@ private fun NewMiniPlayerPlayButton(
     mediaMetadata: MediaMetadata?,
     primaryColor: Color,
     outlineColor: Color,
-    listenTogetherManager: ListenTogetherManager?,
-    compact: Boolean = false
+        compact: Boolean = false
 ) {
     val isPlaying by playerConnection.isPlaying.collectAsStateWithLifecycle()
     val castIsPlaying by castHandler?.castIsPlaying?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(false) }
     val effectiveIsPlaying = if (isCasting) castIsPlaying else isPlaying
-    val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
+    val isListenTogetherGuest = false
     val isMuted by playerConnection.isMuted.collectAsStateWithLifecycle()
 
     
@@ -784,8 +779,7 @@ private fun LegacyMiniPlayer(
     val swipeThumbnailPref by rememberPreference(SwipeThumbnailKey, true)
     
     // Disable swipe for Listen Together guests
-    val listenTogetherManager = LocalListenTogetherManager.current
-    val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
+    val isListenTogetherGuest = false
     val swipeThumbnail = swipeThumbnailPref && !isListenTogetherGuest
 
     val layoutDirection = LocalLayoutDirection.current
@@ -915,8 +909,7 @@ private fun LegacyMiniPlayer(
                 isCasting = isCasting,
                 castHandler = castHandler,
                 playerConnection = playerConnection,
-                listenTogetherManager = listenTogetherManager
-            )
+                            )
 
             IconButton(
                     enabled = canSkipNext && !isListenTogetherGuest,
@@ -947,12 +940,11 @@ private fun LegacyPlayPauseButton(
     isCasting: Boolean,
     castHandler: CastConnectionHandler?,
     playerConnection: PlayerConnection,
-    listenTogetherManager: ListenTogetherManager?
-) {
+    ) {
     val isPlaying by playerConnection.isPlaying.collectAsStateWithLifecycle()
     val castIsPlaying by castHandler?.castIsPlaying?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(false) }
     val effectiveIsPlaying = if (isCasting) castIsPlaying else isPlaying
-    val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
+    val isListenTogetherGuest = false
     val isMuted by playerConnection.isMuted.collectAsStateWithLifecycle()
 
 

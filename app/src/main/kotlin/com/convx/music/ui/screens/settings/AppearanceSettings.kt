@@ -90,23 +90,19 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.convx.music.LocalPlayerAwareWindowInsets
 import com.convx.music.R
-import com.convx.music.constants.CanvasSource
-import com.convx.music.constants.CanvasSourceKey
-import com.convx.music.constants.CanvasThumbnailAnimationKey
 import com.convx.music.constants.CropAlbumArtKey
 import com.convx.music.constants.DefaultOpenTabKey
 import com.convx.music.constants.DynamicThemeKey
 import com.convx.music.constants.EnableHighRefreshRateKey
+import com.convx.music.constants.HideSystemBarsKey
 import com.convx.music.constants.OneTapFullscreenLyricsKey
 import com.convx.music.constants.HomeHeroCardEnabledKey
 import com.convx.music.constants.PureBlackHeroBackgroundKey
 import com.convx.music.constants.LiquidGlassGlobalEnabledKey
-import com.convx.music.constants.AlbumCanvasEnabledKey
 import com.convx.music.constants.AppLanguageKey
 import com.convx.music.constants.LanguageCodeToName
 import com.convx.music.constants.SYSTEM_DEFAULT
 import com.convx.music.ui.ios.compat.Slider
-import com.convx.music.constants.ListenTogetherInTopBarKey
 import com.convx.music.constants.LyricsAnimationStyle
 import com.convx.music.constants.LyricsAnimationStyleKey
 import com.convx.music.constants.LyricsTextPositionKey
@@ -163,6 +159,10 @@ fun AppearanceSettings(
         EnableHighRefreshRateKey,
         defaultValue = true
     )
+    val (hideSystemBars, onHideSystemBarsChange) = rememberPreference(
+        HideSystemBarsKey,
+        defaultValue = false
+    )
     val (cropAlbumArt, onCropAlbumArtChange) = rememberPreference(
         CropAlbumArtKey,
         defaultValue = false
@@ -197,33 +197,19 @@ fun AppearanceSettings(
         SwipeSensitivityKey,
         defaultValue = 0.73f
     )
-    val (canvasThumbnailAnimation, onCanvasThumbnailAnimationChange) = rememberPreference(
-        CanvasThumbnailAnimationKey,
-        defaultValue = true
-    )
-    val (canvasSource) = rememberEnumPreference(
-        CanvasSourceKey,
-        defaultValue = CanvasSource.AUTO
-    )
+
     val (pureBlackHeroBackground, onPureBlackHeroBackgroundChange) = rememberPreference(PureBlackHeroBackgroundKey, false)
     val (liquidGlassEnabled, onLiquidGlassEnabledChange) = rememberPreference(
         LiquidGlassGlobalEnabledKey,
         defaultValue = true
     )
-    // Keep album canvas controls with the other player display settings.
-    val (albumCanvasEnabled, onAlbumCanvasEnabledChange) = rememberPreference(
-        AlbumCanvasEnabledKey,
-        defaultValue = false
-    )
+
     // App language is a general setting, so keep it in the miscellaneous group.
     val (appLanguage, onAppLanguageChange) = rememberPreference(key = AppLanguageKey, defaultValue = SYSTEM_DEFAULT)
     var showAppLanguageDialog by rememberSaveable { mutableStateOf(false) }
     val (homeHeroCardEnabled, onHomeHeroCardEnabledChange) = rememberPreference(HomeHeroCardEnabledKey, true)
 
-    val (listenTogetherInTopBar, onListenTogetherInTopBarChange) = rememberPreference(
-        ListenTogetherInTopBarKey,
-        defaultValue = true
-    )
+
 
     val (swipeToSong, onSwipeToSongChange) = rememberPreference(
         SwipeToSongKey,
@@ -255,48 +241,7 @@ fun AppearanceSettings(
         ShowUploadedPlaylistKey,
         defaultValue = true
     )
-    var showLyricsPositionDialog by rememberSaveable {
-        mutableStateOf(false)
-    }
 
-    var showLyricsAnimationStyleDialog by rememberSaveable {
-        mutableStateOf(SettingsDeepLink.consumeLyricsSheet())
-    }
-
-    var showLyricsTextSizeDialog by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    var showLyricsLineSpacingDialog by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    if (showLyricsPositionDialog) {
-        EnumDialog(
-            onDismiss = { showLyricsPositionDialog = false },
-            onSelect = {
-                onLyricsPositionChange(it)
-                showLyricsPositionDialog = false
-            },
-            title = stringResource(R.string.lyrics_text_position),
-            current = lyricsPosition,
-            values = LyricsPosition.entries,
-            valueText = {
-                when (it) {
-                    LyricsPosition.LEFT -> stringResource(R.string.left)
-                    LyricsPosition.CENTER -> stringResource(R.string.center)
-                    LyricsPosition.RIGHT -> stringResource(R.string.right)
-                }
-            }
-        )
-    }
-
-    LaunchedEffect(showLyricsAnimationStyleDialog) {
-        if (showLyricsAnimationStyleDialog) {
-            showLyricsAnimationStyleDialog = false
-            SettingsSheets.open = SettingsAction.LyricsStyle
-        }
-    }
 
     var showDefaultOpenTabDialog by rememberSaveable { mutableStateOf(false) }
     if (showDefaultOpenTabDialog) {
@@ -350,18 +295,6 @@ fun AppearanceSettings(
                     icon = painterResource(R.drawable.palette),
                     title = { Text(stringResource(R.string.theme_colors)) },
                     onClick = { navController.navigate("settings/appearance/theme") }
-                ),
-                IosSettingsItem(
-                    icon = painterResource(R.drawable.palette),
-                    title = { Text(stringResource(R.string.presets)) },
-                    description = { Text(stringResource(R.string.presets_desc)) },
-                    onClick = { navController.navigate("settings/appearance/presets") }
-                ),
-                IosSettingsItem(
-                    icon = painterResource(R.drawable.edit),
-                    title = { Text(stringResource(R.string.diy)) },
-                    description = { Text(stringResource(R.string.diy_desc)) },
-                    onClick = { navController.navigate("settings/appearance/diy") }
                 )
             )
         )
@@ -385,12 +318,6 @@ fun AppearanceSettings(
                         Text(fontLabel)
                     },
                     onClick = { navController.navigate("settings/appearance/font") }
-                ),
-                IosSettingsItem(
-                    icon = painterResource(R.drawable.convx_logo),
-                    title = { Text(stringResource(R.string.app_icon)) },
-                    description = { Text(stringResource(R.string.app_icon_desc)) },
-                    onClick = { navController.navigate("settings/appearance/appicon") }
                 )
             )
         )
@@ -440,20 +367,28 @@ fun AppearanceSettings(
                         onClick = { onEnableHighRefreshRateChange(!enableHighRefreshRate) }
                     )
                 )
+                add(
+                    IosSettingsItem(
+                        icon = painterResource(R.drawable.crop),
+                        title = { Text("Hide status bar and navigation buttons") },
+                        description = { Text("Immersive fullscreen mode; swipe from edge to show briefly") },
+                        trailingContent = {
+                            Switch(
+                                checked = hideSystemBars,
+                                onCheckedChange = onHideSystemBarsChange
+                            )
+                        },
+                        onClick = { onHideSystemBarsChange(!hideSystemBars) }
+                    )
+                )
             }
         )
 
         Spacer(modifier = Modifier.height(27.dp))
 
         IosSettingsGroup(
-            title = "Player & canvas",
+            title = "Player display",
             items = listOfNotNull(
-                IosSettingsItem(
-                    icon = painterResource(R.drawable.tune),
-                    title = { Text(stringResource(R.string.player_icons)) },
-                    description = { Text(stringResource(R.string.player_icons_desc)) },
-                    onClick = { navController.navigate("settings/appearance/playericons") }
-                ),
                 IosSettingsItem(
                     icon = painterResource(R.drawable.gradient),
                     title = { Text(stringResource(R.string.player_theme)) },
@@ -482,109 +417,13 @@ fun AppearanceSettings(
                         )
                     },
                     onClick = { onMiniPlayerWaveformChange(!miniPlayerWaveform) }
-                ),
-                    IosSettingsItem(
-                        icon = painterResource(R.drawable.canvas_art),
-                        title = { Text(stringResource(R.string.convx_canvas)) },
-                    description = {
-                        val summary = if (!canvasThumbnailAnimation) {
-                            stringResource(R.string.disable)
-                        } else {
-                            when (canvasSource) {
-                                CanvasSource.AUTO -> stringResource(R.string.canvas_source_auto)
-                                CanvasSource.APPLE_MUSIC -> stringResource(R.string.canvas_source_apple_music)
-                                CanvasSource.CONVX -> stringResource(R.string.canvas_source_convx)
-                                CanvasSource.TIDAL -> stringResource(R.string.canvas_source_tidal)
-                                CanvasSource.SPOTIFY -> stringResource(R.string.canvas_source_spotify)
-                            }
-                        }
-                        Text(summary)
-                    },
-                    onClick = { navController.navigate("settings/appearance/canvas") }
-                ),
-                IosSettingsItem(
-                    icon = painterResource(R.drawable.slow_motion_video),
-                    title = { Text(stringResource(R.string.show_album_canvas)) },
-                    description = { Text(stringResource(R.string.show_album_canvas_desc)) },
-                    trailingContent = {
-                        Switch(
-                            checked = albumCanvasEnabled,
-                            onCheckedChange = onAlbumCanvasEnabledChange
-                        )
-                    },
-                    onClick = { onAlbumCanvasEnabledChange(!albumCanvasEnabled) }
                 )
             )
         )
 
         Spacer(modifier = Modifier.height(27.dp))
 
-        IosSettingsGroup(
-            title = "Lyrics layout",
-            items = listOfNotNull(
-                IosSettingsItem(
-                    icon = painterResource(R.drawable.lyrics),
-                    title = { Text(stringResource(R.string.lyrics_text_position)) },
-                    description = {
-                        Text(
-                            when (lyricsPosition) {
-                                LyricsPosition.LEFT -> stringResource(R.string.left)
-                                LyricsPosition.CENTER -> stringResource(R.string.center)
-                                LyricsPosition.RIGHT -> stringResource(R.string.right)
-                            }
-                        )
-                    },
-                    onClick = { showLyricsPositionDialog = true }
-                ),
-                IosSettingsItem(
-                    icon = painterResource(R.drawable.lyrics),
-                    title = { Text(stringResource(R.string.lyrics_animation_style)) },
-                    description = {
-                        Text(
-                            com.convx.music.ui.component.lyricsStyleLabel(lyricsAnimationStyle)
-                        )
-                    },
-                    onClick = { showLyricsAnimationStyleDialog = true }
-                ),
-                IosSettingsItem(
-                    icon = painterResource(R.drawable.lyrics),
-                    title = { Text(stringResource(R.string.lyrics_auto_scroll)) },
-                    trailingContent = {
-                        Switch(
-                            checked = lyricsScroll,
-                            onCheckedChange = onLyricsScrollChange
-                        )
-                    },
-                    onClick = { onLyricsScrollChange(!lyricsScroll) }
-                ),
-                IosSettingsItem(
-                    icon = painterResource(R.drawable.swipe),
-                    title = { Text(stringResource(R.string.lyrics_swipe_to_change_song)) },
-                    description = { Text(stringResource(R.string.lyrics_swipe_to_change_song_desc)) },
-                    trailingContent = {
-                        Switch(
-                            checked = swipeLyrics,
-                            onCheckedChange = onSwipeLyricsChange
-                        )
-                    },
-                    onClick = { onSwipeLyricsChange(!swipeLyrics) }
-                ),
-                IosSettingsItem(
-                    icon = painterResource(R.drawable.fullscreen),
-                    title = { Text(stringResource(R.string.one_tap_fullscreen_lyrics)) },
-                    description = { Text(stringResource(R.string.one_tap_fullscreen_lyrics_desc)) },
-                    trailingContent = {
-                        Switch(
-                            checked = oneTapFullscreenLyrics,
-                            onCheckedChange = onOneTapFullscreenLyricsChange
-                        )
-                    },
-                    onClick = { onOneTapFullscreenLyricsChange(!oneTapFullscreenLyrics) }
-                )
-            )
-        )
 
-        Spacer(modifier = Modifier.height(27.dp))
 
         IosSettingsGroup(
             title = "More",
@@ -789,281 +628,4 @@ enum class LyricsPosition {
 enum class PlayerTextAlignment {
     SIDED,
     CENTER,
-}
-
-@Composable
-fun ColumnScope.LyricsAnimationSheetContent() {
-    val (selected, onSelect) = rememberEnumPreference(LyricsAnimationStyleKey, defaultValue = LyricsAnimationStyle.APPLE_V2)
-    val (position, onPositionChange) = rememberEnumPreference(LyricsTextPositionKey, defaultValue = LyricsPosition.LEFT)
-    val (autoScroll, onAutoScrollChange) = rememberPreference(LyricsScrollKey, defaultValue = true)
-    val (swipeToChange, onSwipeToChangeChange) = rememberPreference(SwipeLyricsKey, defaultValue = false)
-    val animation = androidx.compose.animation.core.rememberInfiniteTransition(label = "lyrics sample")
-    val progress by animation.animateFloat(
-        initialValue = 0.18f,
-        targetValue = 0.82f,
-        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
-            animation = androidx.compose.animation.core.tween(1900),
-            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse,
-        ),
-        label = "sample lyric progress",
-    )
-    val selectedColor by androidx.compose.animation.animateColorAsState(
-        targetValue = IosTheme.tint,
-        animationSpec = androidx.compose.animation.core.tween(220),
-        label = "lyrics style accent",
-    )
-
-    val align = when (position) {
-        LyricsPosition.LEFT -> androidx.compose.ui.text.style.TextAlign.Start
-        LyricsPosition.CENTER -> androidx.compose.ui.text.style.TextAlign.Center
-        LyricsPosition.RIGHT -> androidx.compose.ui.text.style.TextAlign.End
-    }
-    val fill = selected == LyricsAnimationStyle.FLAMINGO || selected == LyricsAnimationStyle.KARAOKE || selected == LyricsAnimationStyle.ARCHIVE_TUNE ||
-        selected == LyricsAnimationStyle.APPLE || selected == LyricsAnimationStyle.APPLE_V2 ||
-        selected == LyricsAnimationStyle.BITCHORD
-
-    run {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .navigationBarsPadding()
-                .padding(bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = "Tap a style to preview and apply it",
-                    style = IosTheme.typography.footnote,
-                    color = IosTheme.colors.secondaryLabel,
-                )
-            }
-
-            // The playing song's own lyrics, through the player's own lyrics view: what is
-            // seen here is exactly what the player shows in the chosen style.
-            val lyricsConnection = com.convx.music.LocalPlayerConnection.current
-            val lyricsTrack by remember(lyricsConnection) {
-                lyricsConnection?.mediaMetadata ?: kotlinx.coroutines.flow.MutableStateFlow(null)
-            }.collectAsStateWithLifecycle()
-            val lyricsPlaying by remember(lyricsConnection) {
-                lyricsConnection?.isPlaying ?: kotlinx.coroutines.flow.MutableStateFlow(false)
-            }.collectAsStateWithLifecycle()
-            // Paused or not, the preview keeps singing: a clock carries on from where the song
-            // stopped and loops at its end, so every style can be watched moving.
-            var pausedClock by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
-            LaunchedEffect(lyricsPlaying, lyricsTrack?.id) {
-                if (lyricsPlaying || lyricsConnection == null) return@LaunchedEffect
-                val from = lyricsConnection.player.currentPosition.coerceAtLeast(0L)
-                val length = ((lyricsTrack?.duration ?: 0) * 1000L).coerceAtLeast(30_000L)
-                val startedAt = System.currentTimeMillis()
-                while (true) {
-                    androidx.compose.runtime.withFrameMillis { }
-                    pausedClock = (from + System.currentTimeMillis() - startedAt) % length
-                }
-            }
-            val previewClock: () -> Long = {
-                if (lyricsPlaying) lyricsConnection?.player?.currentPosition ?: 0L else pausedClock
-            }
-            if (lyricsConnection != null && lyricsTrack != null) {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(360.dp)
-                        .clip(ContinuousRoundedRectangle(24.dp)),
-                ) {
-                    com.convx.music.ui.player.NowPlayingBackground(
-                        artworkUrl = lyricsTrack?.thumbnailUrl,
-                        hero = false,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    com.convx.music.ui.player.InlineLyricsView(
-                        mediaMetadata = lyricsTrack,
-                        showLyrics = true,
-                        positionProvider = previewClock,
-                    )
-                    Text(
-                        lyricsTrack?.title.orEmpty(),
-                        color = Color.White.copy(alpha = 0.6f),
-                        style = IosTheme.typography.caption,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        modifier = Modifier.align(Alignment.TopStart).padding(14.dp),
-                    )
-                }
-            } else {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(168.dp)
-                        .clip(ContinuousRoundedRectangle(24.dp))
-                        .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(selectedColor.copy(alpha = 0.38f).compositeOver(Color(0xFF111217)), Color(0xFF111217)))),
-                ) {
-                    Column(
-                        Modifier.fillMaxSize().padding(horizontal = 22.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
-                    ) {
-                        Text(
-                            "Where the light meets the sea",
-                            color = Color.White.copy(alpha = 0.38f),
-                            style = IosTheme.typography.subheadline,
-                            textAlign = align,
-                            maxLines = 1,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        Text(
-                            "We find our way back home",
-                            style = IosTheme.typography.title3.let {
-                                when {
-                                    fill -> it.copy(
-                                        brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
-                                            0f to selectedColor,
-                                            progress to selectedColor,
-                                            (progress + 0.001f).coerceAtMost(1f) to Color.White.copy(alpha = 0.4f),
-                                            1f to Color.White.copy(alpha = 0.4f),
-                                        ),
-                                    )
-                                    selected == LyricsAnimationStyle.GLOW -> it.copy(
-                                        color = selectedColor,
-                                        shadow = androidx.compose.ui.graphics.Shadow(selectedColor, blurRadius = 8f + progress * 22f),
-                                    )
-                                    else -> it.copy(color = selectedColor)
-                                }
-                            },
-                            fontWeight = FontWeight.Bold,
-                            textAlign = align,
-                            maxLines = 1,
-                            modifier = Modifier.fillMaxWidth().graphicsLayer {
-                                when (selected) {
-                                    LyricsAnimationStyle.NONE -> Unit
-                                    LyricsAnimationStyle.FADE -> alpha = 0.45f + progress * 0.55f
-                                    LyricsAnimationStyle.SLIDE -> {
-                                        translationX = (1f - progress) * 28.dp.toPx() * if (position == LyricsPosition.RIGHT) -1f else 1f
-                                        alpha = 0.5f + progress * 0.5f
-                                    }
-                                    else -> {
-                                        scaleX = 0.94f + progress * 0.06f
-                                        scaleY = scaleX
-                                        transformOrigin = androidx.compose.ui.graphics.TransformOrigin(
-                                            when (position) {
-                                                LyricsPosition.LEFT -> 0f
-                                                LyricsPosition.CENTER -> 0.5f
-                                                LyricsPosition.RIGHT -> 1f
-                                            },
-                                            0.5f,
-                                        )
-                                    }
-                                }
-                            },
-                        )
-                        Text(
-                            "Under the open sky",
-                            color = Color.White.copy(alpha = 0.38f),
-                            style = IosTheme.typography.subheadline,
-                            textAlign = align,
-                            maxLines = 1,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                    Text(
-                        "SAMPLE",
-                        color = Color.White.copy(alpha = 0.45f),
-                        style = IosTheme.typography.caption,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.align(Alignment.TopEnd).padding(14.dp),
-                    )
-                }
-            }
-
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                // Bleed to the sheet edge while the first chip still lines up with the 20dp gutter.
-                modifier = Modifier.layout { measurable, constraints ->
-                    val bleed = 32.dp.roundToPx()
-                    val placeable = measurable.measure(constraints.copy(maxWidth = constraints.maxWidth + bleed))
-                    layout(constraints.maxWidth, placeable.height) { placeable.place(-bleed / 2, 0) }
-                },
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp),
-            ) {
-                items(LyricsAnimationStyle.entries) { style ->
-                    val active = style == selected
-                    Text(
-                        text = com.convx.music.ui.component.lyricsStyleLabel(style),
-                        color = if (active) Color.White else IosTheme.colors.label,
-                        style = IosTheme.typography.subheadline,
-                        fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
-                        maxLines = 1,
-                        modifier = Modifier
-                            .clip(ContinuousCapsule())
-                            .background(if (active) selectedColor else IosTheme.colors.secondarySystemFill)
-                            .clickable { onSelect(style) }
-                            .defaultMinSize(minHeight = 40.dp)
-                            .wrapContentHeight(Alignment.CenterVertically)
-                            .padding(horizontal = 16.dp),
-                    )
-                }
-            }
-
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(ContinuousRoundedRectangle(IosMetrics.GroupedCornerRadius))
-                    .background(IosTheme.colors.secondarySystemGroupedBackground),
-            ) {
-                Row(
-                    Modifier.fillMaxWidth().defaultMinSize(minHeight = 56.dp).padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        stringResource(R.string.lyrics_text_position),
-                        style = IosTheme.typography.body,
-                        color = IosTheme.colors.label,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Row(
-                        Modifier
-                            .clip(ContinuousCapsule())
-                            .background(IosTheme.colors.secondarySystemFill)
-                            .padding(3.dp),
-                    ) {
-                        LyricsPosition.entries.forEach { p ->
-                            val active = p == position
-                            Text(
-                                text = when (p) {
-                                    LyricsPosition.LEFT -> stringResource(R.string.left)
-                                    LyricsPosition.CENTER -> stringResource(R.string.center)
-                                    LyricsPosition.RIGHT -> stringResource(R.string.right)
-                                },
-                                color = if (active) Color.White else IosTheme.colors.label,
-                                style = IosTheme.typography.footnote,
-                                fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
-                                maxLines = 1,
-                                modifier = Modifier
-                                    .clip(ContinuousCapsule())
-                                    .background(if (active) selectedColor else Color.Transparent)
-                                    .clickable { onPositionChange(p) }
-                                    .defaultMinSize(minHeight = 34.dp)
-                                    .wrapContentHeight(Alignment.CenterVertically)
-                                    .padding(horizontal = 12.dp),
-                            )
-                        }
-                    }
-                }
-                HorizontalDivider(Modifier.padding(start = 16.dp), color = IosTheme.colors.separator, thickness = IosMetrics.SeparatorThickness)
-                LyricsSheetSwitch(stringResource(R.string.lyrics_auto_scroll), autoScroll, onAutoScrollChange)
-                HorizontalDivider(Modifier.padding(start = 16.dp), color = IosTheme.colors.separator, thickness = IosMetrics.SeparatorThickness)
-                LyricsSheetSwitch(stringResource(R.string.lyrics_swipe_to_change_song), swipeToChange, onSwipeToChangeChange)
-            }
-        }
-    }
-}
-
-@Composable
-private fun LyricsSheetSwitch(title: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().clickable { onChange(!checked) }.defaultMinSize(minHeight = 56.dp).padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(title, style = IosTheme.typography.body, color = IosTheme.colors.label, modifier = Modifier.weight(1f))
-        Switch(checked = checked, onCheckedChange = onChange)
-    }
 }

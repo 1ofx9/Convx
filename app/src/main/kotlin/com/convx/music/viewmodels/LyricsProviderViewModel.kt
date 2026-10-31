@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.combine
 import com.convx.music.lyrics.LyricsProviderRegistry
 import com.convx.music.lyrics.LyricsProviderRepository
 import com.convx.music.lyrics.LyricsProviderStatus
-import com.convx.music.lyrics.LyricsTranslationHelper
 import com.convx.music.models.MediaMetadata
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -67,7 +66,6 @@ class LyricsProviderViewModel @Inject constructor(
                 val lyrics = result.getOrNull()
                 if (lyrics != null) {
                     database.withTransaction { upsert(LyricsEntity(metadata.id, lyrics, provider.id)) }
-                    LyricsTranslationHelper.triggerClearTranslations()
                     kotlinx.coroutines.withContext(Dispatchers.Main) { onSelected() }
                 } else {
                     _error.value = true
