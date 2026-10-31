@@ -314,11 +314,6 @@ dependencies {
     implementation(libs.haze)
     implementation(libs.haze.materials)
 
-    // Apple-Music-style karaoke lyrics: per-syllable timing, background/accompaniment
-    // lines, and left/right alignment for duets. Same renderer the reference app uses --
-    // writing this by hand is ~1400 lines of text layout and interruptible scroll.
-    implementation(libs.accompanist.lyrics.ui)
-    implementation(libs.accompanist.lyrics.core)
 
     implementation(libs.media3)
     implementation(libs.media3.session)

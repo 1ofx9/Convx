@@ -103,8 +103,6 @@ import com.convx.music.constants.AppLanguageKey
 import com.convx.music.constants.LanguageCodeToName
 import com.convx.music.constants.SYSTEM_DEFAULT
 import com.convx.music.ui.ios.compat.Slider
-import com.convx.music.constants.LyricsAnimationStyle
-import com.convx.music.constants.LyricsAnimationStyleKey
 import com.convx.music.constants.LyricsTextPositionKey
 import com.convx.music.constants.LyricsTextSizeKey
 import com.convx.music.constants.ShowCachedPlaylistKey
@@ -180,10 +178,7 @@ fun AppearanceSettings(
         LyricsScrollKey,
         defaultValue = true
     )
-    val (lyricsAnimationStyle, onLyricsAnimationStyleChange) = rememberEnumPreference(
-        LyricsAnimationStyleKey,
-        defaultValue = LyricsAnimationStyle.APPLE_V2
-    )
+
     val (lyricsTextSize, onLyricsTextSizeChange) = rememberPreference(LyricsTextSizeKey, defaultValue = 30f)
     val (lyricsLineSpacing, onLyricsLineSpacingChange) = rememberPreference(LyricsLineSpacingKey, defaultValue = 1.3f)
     val (swipeLyrics, onSwipeLyricsChange) = rememberPreference(SwipeLyricsKey, defaultValue = false)
