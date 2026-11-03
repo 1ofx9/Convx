@@ -486,14 +486,14 @@ fun WelcomePagerScreen(onFinished: () -> Unit) {
                                 )
                                 Spacer(Modifier.width(8.dp))
                             }
-                            Text(if (servers.isNotEmpty()) "Connected • Tap to Re-Test" else "Test & Connect")
+                            Text(if (busyId != null) "Connecting & Syncing…" else if (servers.isNotEmpty()) "Connected • Tap to Re-Sync" else "Test & Connect")
                         }
 
                         if (serverStatus != null) {
                             Text(
                                 text = serverStatus.orEmpty(),
                                 style = AppTheme.typography.bodySmall,
-                                color = if (serverStatus?.contains("OK", ignoreCase = true) == true || serverStatus?.contains("saved", ignoreCase = true) == true) Color(0xFF4CAF50) else AppTheme.colorScheme.error,
+                                color = if (serverStatus?.contains("OK", ignoreCase = true) == true || serverStatus?.contains("saved", ignoreCase = true) == true || serverStatus?.contains("Added", ignoreCase = true) == true || serverStatus?.contains("scanned", ignoreCase = true) == true || serverStatus?.contains("Scanning", ignoreCase = true) == true) Color(0xFF4CAF50) else AppTheme.colorScheme.error,
                                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                             )
                         }

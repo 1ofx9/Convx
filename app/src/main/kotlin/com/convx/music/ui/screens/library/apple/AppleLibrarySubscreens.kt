@@ -499,7 +499,7 @@ fun AppleArtistsPage(navController: NavController, onBack: () -> Unit, viewModel
         if (needsAccess || artists.isEmpty()) {
             item(key = "artist_access", contentType = "placeholder") {
                 if (needsAccess) LocalAccessCard(permission.blocked, permission.request)
-                else com.convx.music.ui.component.LocalMusicEmptyState(onScan = viewModel::scanDevice)
+                else com.convx.music.ui.component.LocalMusicEmptyState(onScan = viewModel::scanDevice, onAddServer = { navController.navigate("settings/network_storage") })
             }
             return@AppleSubpage
         }
@@ -548,7 +548,7 @@ fun AppleAlbumsPage(navController: NavController, onBack: () -> Unit, viewModel:
         if (needsAccess || albums.isEmpty()) {
             item(key = "album_access", contentType = "placeholder") {
                 if (needsAccess) LocalAccessCard(permission.blocked, permission.request)
-                else com.convx.music.ui.component.LocalMusicEmptyState(onScan = viewModel::scanDevice)
+                else com.convx.music.ui.component.LocalMusicEmptyState(onScan = viewModel::scanDevice, onAddServer = { navController.navigate("settings/network_storage") })
             }
             return@AppleSubpage
         }
@@ -579,7 +579,7 @@ fun AppleSongsPage(navController: NavController, onBack: () -> Unit, viewModel: 
         onBack = onBack,
         placeholder = when {
             localOnly && !permission.granted -> ({ LocalAccessCard(permission.blocked, permission.request) })
-            songs.isEmpty() -> ({ com.convx.music.ui.component.LocalMusicEmptyState(onScan = viewModel::scanDevice) })
+            songs.isEmpty() -> ({ com.convx.music.ui.component.LocalMusicEmptyState(onScan = viewModel::scanDevice, onAddServer = { navController.navigate("settings/network_storage") }) })
             else -> null
         },
     )
@@ -612,7 +612,7 @@ fun AppleLocalSongsPage(navController: NavController, onBack: () -> Unit, viewMo
         }) else null,
         placeholder = when {
             !granted -> ({ LocalAccessCard(blocked = permission.blocked, onAllow = permission.request) })
-            songs.isEmpty() && !scanning -> ({ com.convx.music.ui.component.LocalMusicEmptyState(onScan = { viewModel.scan(context) }) })
+            songs.isEmpty() && !scanning -> ({ com.convx.music.ui.component.LocalMusicEmptyState(onScan = { viewModel.scan(context) }, onAddServer = { navController.navigate("settings/network_storage") }) })
             else -> null
         },
     )

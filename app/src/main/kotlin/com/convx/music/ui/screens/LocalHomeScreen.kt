@@ -149,16 +149,12 @@ fun LocalHomeScreen(
                     )
                 },
             ) {
-                if (!localAudioPermission.granted) {
-                    item(key = "local_permission", contentType = "local_access") {
-                        com.convx.music.ui.screens.library.apple.LocalAccessCard(
-                            blocked = localAudioPermission.blocked,
-                            onAllow = localAudioPermission.request,
-                        )
-                    }
-                } else if (localSongs.isEmpty()) {
+                if (localSongs.isEmpty()) {
                     item(key = "local_empty", contentType = "local_access") {
-                        com.convx.music.ui.component.LocalMusicEmptyState(onScan = viewModel::refresh)
+                        com.convx.music.ui.component.LocalMusicEmptyState(
+                            onScan = viewModel::refresh,
+                            onAddServer = { navController.navigate("settings/network_storage") }
+                        )
                     }
                 } else localHomeContent(
                     deps = deps,

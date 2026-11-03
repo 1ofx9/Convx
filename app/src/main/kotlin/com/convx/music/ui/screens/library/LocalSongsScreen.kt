@@ -184,7 +184,7 @@ fun LocalSongsScreen(
                 }
             } else if (songs.isEmpty() && !isScanning) {
                 item(key = "empty", contentType = "local_access") {
-                    com.convx.music.ui.component.LocalMusicEmptyState(onScan = { viewModel.scanDevice(context) })
+                    com.convx.music.ui.component.LocalMusicEmptyState(onScan = { viewModel.scanDevice(context) }, onAddServer = { navController.navigate("settings/network_storage") })
                 }
             } else if (songs.isEmpty()) {
                 item(key = "empty", contentType = "header") {

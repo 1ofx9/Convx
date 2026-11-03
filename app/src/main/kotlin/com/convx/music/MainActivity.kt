@@ -49,6 +49,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import com.convx.music.utils.NetworkLibraryImporter
 import java.util.Locale
 import javax.inject.Inject
 
@@ -192,6 +194,25 @@ class MainActivity : ComponentActivity() {
                         insetsController.show(WindowInsetsCompat.Type.systemBars())
                     }
                 }
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val app = applicationContext as? App ?: return@launch
+                val repo = app.networkRepository.get()
+                val servers = repo.loadServers()
+                if (servers.isNotEmpty()) {
+                    val count = database.get().getSongCount()
+                    if (count == 0) {
+                        servers.forEach { server ->
+                            runCatching {
+                                NetworkLibraryImporter.import(database.get(), repo, server.id)
+                            }
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+            }
         }
 
         // Cold launch from the launcher only (WelcomeActivity hands off with this extra);

@@ -52,7 +52,10 @@ class NetworkStorageViewModel @Inject constructor(
                 _status.value = context.getString(R.string.network_storage_testing)
                 repository.test(server)
                 repository.save(server)
-                _status.value = context.getString(R.string.network_storage_saved, server.name)
+                _status.value = context.getString(R.string.network_storage_scanning, server.name)
+                val result = NetworkLibraryImporter.import(database, repository, server.id)
+                _status.value = context.getString(R.string.network_storage_scanned, result.added, result.skipped) +
+                    if (result.truncated) context.getString(R.string.network_storage_truncated) else "" 
             } catch (e: IllegalArgumentException) {
                 _status.value = e.message
             } catch (e: Exception) {

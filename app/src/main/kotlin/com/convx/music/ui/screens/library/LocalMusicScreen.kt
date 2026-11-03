@@ -249,7 +249,7 @@ fun LocalMusicScreen(
             }
         } else if (songs.isEmpty() && !isScanning) {
             item(key = "empty") {
-                LocalMusicEmptyState(onScan = { viewModel.scanDevice(context) })
+                LocalMusicEmptyState(onScan = { viewModel.scanDevice(context) }, onAddServer = { navController.navigate("settings/network_storage") })
             }
         }
 

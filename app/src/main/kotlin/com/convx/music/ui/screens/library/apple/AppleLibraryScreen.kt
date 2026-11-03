@@ -219,7 +219,7 @@ fun AppleLibraryScreen(
             }
         } else {
             item(key = "library_empty", contentType = "placeholder") {
-                com.convx.music.ui.component.LocalMusicEmptyState(onScan = viewModel::scanDevice)
+                com.convx.music.ui.component.LocalMusicEmptyState(onScan = viewModel::scanDevice, onAddServer = { navController.navigate("settings/network_storage") })
             }
         }
     }

@@ -50,6 +50,16 @@ import com.convx.music.ui.ios.compat.Text
 import com.convx.music.ui.ios.foundation.IosTheme
 import com.convx.music.ui.ios.foundation.iosRowPress
 import com.convx.music.ui.screens.library.apple.SfStyle
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.convx.music.App
+import com.convx.music.LocalDatabase
+import com.convx.music.utils.NetworkLibraryImporter
 
 /** The runtime permission that gates reading audio files on this Android version. */
 fun localAudioPermission(): String =
@@ -143,19 +153,93 @@ fun LocalMusicPermissionPrompt(
     }
 }
 
-/** Shown when access is granted but the device scan found no audio. */
+/** Shown when library has no audio; handles both unsynced and unconnected server states. */
 @Composable
 fun LocalMusicEmptyState(
-    onScan: () -> Unit,
+    onScan: (() -> Unit)? = null,
+    onAddServer: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    PromptLayout(
-        icon = R.drawable.music_note,
-        title = stringResource(R.string.local_empty_title),
-        body = stringResource(R.string.local_empty_body),
-        modifier = modifier,
-    ) {
-        PromptAction(stringResource(R.string.local_empty_scan), onScan)
+    val context = LocalContext.current
+    val app = context.applicationContext as? App
+    val networkRepo = remember(app) { app?.networkRepository?.get() }
+    val servers by (networkRepo?.servers ?: MutableStateFlow(emptyList())).collectAsStateWithLifecycle()
+    val database = LocalDatabase.current.get()
+    val scope = rememberCoroutineScope()
+    var isSyncing by remember { mutableStateOf(false) }
+    var syncMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        networkRepo?.loadServers()
+    }
+
+    if (servers.isEmpty()) {
+        PromptLayout(
+            icon = R.drawable.storage,
+            title = "No Server Connected",
+            body = "Connect your Navidrome or Subsonic server to stream your music library.",
+            modifier = modifier,
+        ) {
+            PromptAction("Connect Server") {
+                onAddServer?.invoke()
+            }
+        }
+    } else {
+        PromptLayout(
+            icon = R.drawable.storage,
+            title = if (isSyncing) "Syncing Library…" else "Library Not Synced",
+            body = syncMessage ?: if (isSyncing) {
+                "Fetching songs from ${servers.firstOrNull()?.name ?: "server"}…"
+            } else {
+                "Connected to ${servers.firstOrNull()?.name ?: "server"}. Sync your music to start streaming."
+            },
+            modifier = modifier,
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                PromptAction(
+                    label = if (isSyncing) "Syncing…" else "Sync Library",
+                    onClick = {
+                        if (!isSyncing && networkRepo != null) {
+                            scope.launch(Dispatchers.IO) {
+                                isSyncing = true
+                                try {
+                                    var totalAdded = 0
+                                    servers.forEach { server ->
+                                        syncMessage = "Scanning ${server.name}…"
+                                        val result = NetworkLibraryImporter.import(database, networkRepo, server.id)
+                                        totalAdded += result.added
+                                    }
+                                    syncMessage = "Added $totalAdded songs"
+                                    withContext(Dispatchers.Main) {
+                                        onScan?.invoke()
+                                    }
+                                } catch (e: Exception) {
+                                    syncMessage = e.message ?: "Sync failed"
+                                } finally {
+                                    isSyncing = false
+                                }
+                            }
+                        }
+                    }
+                )
+
+                if (onAddServer != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "Manage Servers",
+                        style = SfStyle(15.sp, 20.sp, FontWeight.Medium, (-0.23).sp),
+                        color = IosTheme.tint,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .iosRowPress(onClick = onAddServer)
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+            }
+        }
     }
 }
 
