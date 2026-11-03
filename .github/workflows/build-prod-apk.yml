@@ -1,20 +1,22 @@
-name: Build Production Release APK
+name: Build Release APK
 
 on:
   workflow_dispatch:
   push:
     branches: [ 'main', 'master' ]
+    tags: [ 'v*' ]
     paths-ignore:
       - 'README.md'
       - 'assets/**'
+      - 'docs/**'
       - '.github/**/*.md'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  build_production:
-    name: Build Signed Production APK
+  build_release:
+    name: Build Signed Release APK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -54,16 +56,23 @@ jobs:
               -dname "CN=Convx, O=Convx, C=US"
           fi
 
-      - name: Build Production Release APKs (FOSS & GMS)
+      - name: Build Universal FOSS Release APK
         env:
           STORE_PASSWORD: convxrelease
           KEY_ALIAS: convx
           KEY_PASSWORD: convxrelease
         run: |
-          ./gradlew assembleUniversalFossRelease assembleUniversalGmsRelease --no-configuration-cache --console=plain --warning-mode summary -x lint
+          ./gradlew assembleUniversalFossRelease --no-configuration-cache --console=plain --warning-mode summary -x lint
 
-      - name: Upload Production APK Artifacts
+      - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: convx-production-apks
-          path: app/build/outputs/apk/**/release/*.apk
+          name: app-universal-foss-release
+          path: app/build/outputs/apk/universalFoss/release/*.apk
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: app/build/outputs/apk/universalFoss/release/*.apk
+          generate_release_notes: true
