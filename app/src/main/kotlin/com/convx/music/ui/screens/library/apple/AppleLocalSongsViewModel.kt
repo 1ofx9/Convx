@@ -11,21 +11,21 @@ import androidx.lifecycle.viewModelScope
 import com.convx.music.constants.SongSortType
 import com.convx.music.db.MusicDatabase
 import com.convx.music.db.entities.Song
-import com.convx.music.utils.LocalAudioScanner
+import com.convx.music.sync.NetworkSyncManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** Songs stored on this phone (MediaStore), for Library's Local page. */
+/** Songs synced from Navidrome/Subsonic server for Library's Songs page. */
 @HiltViewModel
 class AppleLocalSongsViewModel @Inject constructor(
     private val database: MusicDatabase,
+    val syncManager: NetworkSyncManager,
 ) : ViewModel() {
     private val order = MutableStateFlow(SongSortType.NAME to false)
 
@@ -34,20 +34,16 @@ class AppleLocalSongsViewModel @Inject constructor(
         .flatMapLatest { (type, desc) -> database.localSongs(type, desc) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    private val _scanning = MutableStateFlow(false)
-    val scanning = _scanning.asStateFlow()
+    val scanning: StateFlow<Boolean> = syncManager.syncState
+        .map { it.isSyncing }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     fun sort(type: SongSortType, descending: Boolean) {
         order.value = type to descending
     }
 
-    /** Reads new or changed audio files into the library; cheap when nothing changed. */
-    fun scan(context: Context) {
-        if (_scanning.value) return
-        _scanning.value = true
-        viewModelScope.launch {
-            runCatching { LocalAudioScanner.scanAndInsert(context.applicationContext, database) }
-            _scanning.value = false
-        }
+    /** Synchronizes songs with configured network servers. */
+    fun scan(context: Context? = null) {
+        syncManager.sync(force = true)
     }
 }

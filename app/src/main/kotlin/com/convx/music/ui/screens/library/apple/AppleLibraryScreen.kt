@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -175,12 +177,20 @@ fun AppleLibraryScreen(
     val firstItemGap = if (tabletLayout) 8.dp else {
         maxOf(pageInsets.calculateTopPadding(), 115.dp) - pageInsets.calculateTopPadding()
     }
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(colors.systemBackground),
-        contentPadding = pageInsets,
+    val syncState by viewModel.syncState.collectAsStateWithLifecycle()
+    val pullRefreshState = rememberPullToRefreshState()
+    PullToRefreshBox(
+        isRefreshing = syncState.isSyncing,
+        onRefresh = { viewModel.sync() },
+        state = pullRefreshState,
+        modifier = Modifier.fillMaxSize(),
     ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colors.systemBackground),
+            contentPadding = pageInsets,
+        ) {
         // Reference: 13pt between the large title and the first row.
         item(key = "top_gap", contentType = "gap") { Spacer(Modifier.height(firstItemGap)) }
         if (!needsAccess && pinned.isNotEmpty()) {
@@ -223,13 +233,14 @@ fun AppleLibraryScreen(
             }
         }
     }
+    }
 }
 
 private class CategoryRowSpec(val destination: AppleLibraryDestination, val label: Int, val icon: SfSymbol)
 
 private val DeviceLibraryDestinations = setOf(
     AppleLibraryDestination.Playlists, AppleLibraryDestination.Artists,
-    AppleLibraryDestination.Albums, AppleLibraryDestination.Songs, AppleLibraryDestination.Local,
+    AppleLibraryDestination.Albums, AppleLibraryDestination.Songs,
 )
 
 private val Rows = listOf(

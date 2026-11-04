@@ -33,6 +33,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import com.convx.music.App
+import com.convx.music.sync.NetworkSyncManager
+import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -175,36 +180,48 @@ internal fun AppleSubpage(
         onDraw = remember(pageColor) { { drawRect(pageColor); drawContent() } },
     )
 
+    val pullRefreshState = rememberPullToRefreshState()
+    val context = LocalContext.current
+    val syncManager = remember(context) { (context.applicationContext as? App)?.syncManager?.get() }
+    val syncState by (syncManager?.syncState ?: MutableStateFlow(NetworkSyncManager.SyncState())).collectAsStateWithLifecycle()
+
     Box(
         Modifier
             .fillMaxSize()
             .background(colors.systemBackground),
     ) {
-        LazyColumn(
-            state = state,
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer()
-                .layerBackdrop(pageBackdrop)
-                .graphicsLayer()
-                .hazeSource(haze),
-            // The side inset is padding, not a narrower list, so rows scroll under the side bar.
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                start = sideInset,
-                top = statusTop + com.convx.music.ui.component.TopBarContentHeight,
-                bottom = bottom + 16.dp,
-            ),
+        PullToRefreshBox(
+            isRefreshing = syncState.isSyncing,
+            onRefresh = { syncManager?.sync(force = true) },
+            state = pullRefreshState,
+            modifier = Modifier.fillMaxSize(),
         ) {
-            item(key = LargeTitleKey, contentType = "large_title") {
-                Text(
-                    text = title,
-                    style = SfStyle(34.sp, 41.sp, FontWeight.Bold, (-0.6).sp),
-                    color = colors.label,
-                    maxLines = 1,
-                    modifier = Modifier.padding(start = titleGutter, end = 16.dp, top = 10.dp, bottom = 10.dp),
-                )
+            LazyColumn(
+                state = state,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer()
+                    .layerBackdrop(pageBackdrop)
+                    .graphicsLayer()
+                    .hazeSource(haze),
+                // The side inset is padding, not a narrower list, so rows scroll under the side bar.
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    start = sideInset,
+                    top = statusTop + com.convx.music.ui.component.TopBarContentHeight,
+                    bottom = bottom + 16.dp,
+                ),
+            ) {
+                item(key = LargeTitleKey, contentType = "large_title") {
+                    Text(
+                        text = title,
+                        style = SfStyle(34.sp, 41.sp, FontWeight.Bold, (-0.6).sp),
+                        color = colors.label,
+                        maxLines = 1,
+                        modifier = Modifier.padding(start = titleGutter, end = 16.dp, top = 10.dp, bottom = 10.dp),
+                    )
+                }
+                content()
             }
-            content()
         }
 
         // Only as deep as the toolbar row (+8dp of fade): the large title sits right
@@ -607,14 +624,13 @@ fun AppleLocalSongsPage(navController: NavController, onBack: () -> Unit, viewMo
         onSort = { type, desc -> sortType = type; viewModel.sort(type, desc) },
         navController = navController,
         onBack = onBack,
-        header = if (granted) ({
-            com.convx.music.ui.screens.library.LocalMusicFoldersEntry(count = null, navController = navController)
+        header = null,
+        placeholder = if (songs.isEmpty() && !scanning) ({
+            com.convx.music.ui.component.LocalMusicEmptyState(
+                onScan = { viewModel.scan(context) },
+                onAddServer = { navController.navigate("settings/network_storage") },
+            )
         }) else null,
-        placeholder = when {
-            !granted -> ({ LocalAccessCard(blocked = permission.blocked, onAllow = permission.request) })
-            songs.isEmpty() && !scanning -> ({ com.convx.music.ui.component.LocalMusicEmptyState(onScan = { viewModel.scan(context) }, onAddServer = { navController.navigate("settings/network_storage") }) })
-            else -> null
-        },
     )
 }
 

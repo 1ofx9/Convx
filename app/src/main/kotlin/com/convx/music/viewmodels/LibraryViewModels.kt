@@ -192,8 +192,9 @@ constructor(
             _isScanning.value = true
             _scanResult.value = null
             try {
-                val result = LocalAudioScanner.scanAndInsert(context, database)
-                _scanResult.value = result
+                val app = context.applicationContext as? com.convx.music.App
+                app?.syncManager?.get()?.sync(force = true)?.join()
+                _scanResult.value = LocalAudioScanner.ScanResult(0, 0, 0)
             } catch (e: Exception) {
                 _scanResult.value = LocalAudioScanner.ScanResult(0, 0, 0)
             } finally {

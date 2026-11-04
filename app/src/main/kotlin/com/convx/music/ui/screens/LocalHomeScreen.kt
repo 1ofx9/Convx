@@ -17,17 +17,16 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -55,10 +54,7 @@ import com.convx.music.ui.theme.LocalPageMetrics
 import com.convx.music.utils.rememberPreference
 
 /**
- * Home for local-only mode: the on-device library under the same chrome as the feed Home.
- *
- * Its own screen rather than branches inside [HomeScreen]: there is no feed to refresh, no sign-in
- * card, mood chips, charts or wrapped card, so none of that machinery is composed here.
+ * Home for Navidrome streaming mode: the server library under the refined liquid glass chrome.
  */
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -74,17 +70,13 @@ fun LocalHomeScreen(
     val isPlayingState = playerConnection.isEffectivelyPlaying.collectAsStateWithLifecycle()
     val mediaMetadataState = playerConnection.mediaMetadata.collectAsStateWithLifecycle()
 
+    val syncState by viewModel.syncState.collectAsStateWithLifecycle()
     val localSongs by viewModel.songs.collectAsStateWithLifecycle()
     val localAlbums by viewModel.albums.collectAsStateWithLifecycle()
     val localArtists by viewModel.artists.collectAsStateWithLifecycle()
     val localPlaylists by viewModel.playlists.collectAsStateWithLifecycle()
-    val localFolders by viewModel.folders.collectAsStateWithLifecycle()
 
-    val localAudioPermission = com.convx.music.ui.component.rememberLocalAudioPermission { }
-    LaunchedEffect(localAudioPermission.granted) {
-        if (localAudioPermission.granted) viewModel.refresh()
-    }
-
+    val pullRefreshState = rememberPullToRefreshState()
     val lazyListState = rememberLazyListState()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val scrollToTop =
@@ -135,39 +127,45 @@ fun LocalHomeScreen(
                 onLocalItemClick = itemHandlers.onLocalItemClick,
             )
 
-            LazyColumn(
-                state = lazyListState,
-                verticalArrangement = Arrangement.spacedBy(AppPage.ItemSpacing),
-                contentPadding = run {
-                    val ins = LocalPlayerAwareWindowInsets.current.asPaddingValues()
-                    val dir = LocalLayoutDirection.current
-                    PaddingValues(
-                        start = ins.calculateStartPadding(dir),
-                        top = maxOf(ins.calculateTopPadding(), if (sideInset > 0.dp) 96.dp else 116.dp),
-                        end = ins.calculateRightPadding(dir),
-                        bottom = ins.calculateBottomPadding(),
-                    )
-                },
+            PullToRefreshBox(
+                isRefreshing = syncState.isSyncing,
+                onRefresh = { viewModel.refresh() },
+                state = pullRefreshState,
+                modifier = Modifier.fillMaxSize(),
             ) {
-                if (localSongs.isEmpty()) {
-                    item(key = "local_empty", contentType = "local_access") {
-                        com.convx.music.ui.component.LocalMusicEmptyState(
-                            onScan = viewModel::refresh,
-                            onAddServer = { navController.navigate("settings/network_storage") }
+                LazyColumn(
+                    state = lazyListState,
+                    verticalArrangement = Arrangement.spacedBy(AppPage.ItemSpacing),
+                    contentPadding = run {
+                        val ins = LocalPlayerAwareWindowInsets.current.asPaddingValues()
+                        val dir = LocalLayoutDirection.current
+                        PaddingValues(
+                            start = ins.calculateStartPadding(dir),
+                            top = maxOf(ins.calculateTopPadding(), if (sideInset > 0.dp) 96.dp else 116.dp),
+                            end = ins.calculateRightPadding(dir),
+                            bottom = ins.calculateBottomPadding(),
                         )
-                    }
-                } else localHomeContent(
-                    deps = deps,
-                    songs = localSongs,
-                    albums = localAlbums,
-                    artists = localArtists,
-                    playlists = localPlaylists,
-                    folders = localFolders,
-                    columns = keepListeningColumns,
-                )
+                    },
+                ) {
+                    if (localSongs.isEmpty()) {
+                        item(key = "local_empty", contentType = "local_access") {
+                            com.convx.music.ui.component.LocalMusicEmptyState(
+                                onScan = viewModel::refresh,
+                                onAddServer = { navController.navigate("settings/network_storage") },
+                            )
+                        }
+                    } else localHomeContent(
+                        deps = deps,
+                        songs = localSongs,
+                        albums = localAlbums,
+                        artists = localArtists,
+                        playlists = localPlaylists,
+                        columns = keepListeningColumns,
+                    )
 
-                item(key = "bottom_spacer", contentType = "spacer") {
-                    Spacer(modifier = Modifier.height(30.dp))
+                    item(key = "bottom_spacer", contentType = "spacer") {
+                        Spacer(modifier = Modifier.height(30.dp))
+                    }
                 }
             }
 
@@ -178,12 +176,11 @@ fun LocalHomeScreen(
                     lazyListState = lazyListState,
                     icon = R.drawable.shuffle,
                     onClick = {
-                        // Nothing to pick a radio from offline: shuffle the library itself.
                         playerConnection.playQueue(
                             ListQueue(items = localSongs.shuffled().map { it.toMediaItem() }, startIndex = 0),
                         )
                     },
-                                    )
+                )
             }
         }
     }

@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.convx.music.ui.ios.compat.Icon
@@ -113,11 +115,10 @@ fun LocalSongsScreen(
 
     // Entering the tab is the natural moment to pick up files added since last time.
     // force = false, so bouncing to the player and back does not re-sweep MediaStore.
-    val audioPermission = com.convx.music.ui.component.rememberLocalAudioPermission { }
-    LaunchedEffect(audioPermission.granted) {
-        if (audioPermission.granted) viewModel.scanDevice(context, force = false)
+    val visibleSongs = sortedSongs
+    LaunchedEffect(Unit) {
+        viewModel.scanDevice(context, force = false)
     }
-    val visibleSongs = if (audioPermission.granted) sortedSongs else emptyList()
     val sectionIndexMap = remember(sortedSongs, sortType) {
         when (sortType) {
             SongSortType.NAME -> buildAlphabetSectionIndex(sortedSongs) { it.title }
@@ -142,16 +143,23 @@ fun LocalSongsScreen(
 
     // This tab has no page behind it in local mode, so it paints its own light or dark background.
     Box(modifier = Modifier.fillMaxSize().background(AppTheme.colorScheme.background)) {
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier.fillMaxSize().hazeSource(hazeState),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                start = sideInset,
-                top = maxOf(pageInsets.calculateTopPadding(), if (sideInset > 0.dp) 96.dp else 116.dp),
-                end = pageInsets.calculateEndPadding(androidx.compose.ui.platform.LocalLayoutDirection.current),
-                bottom = pageInsets.calculateBottomPadding(),
-            ),
+        val pullRefreshState = rememberPullToRefreshState()
+        PullToRefreshBox(
+            isRefreshing = isScanning,
+            onRefresh = { viewModel.scanDevice(context, force = true) },
+            state = pullRefreshState,
+            modifier = Modifier.fillMaxSize(),
         ) {
+            LazyColumn(
+                state = lazyListState,
+                modifier = Modifier.fillMaxSize().hazeSource(hazeState),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    start = sideInset,
+                    top = maxOf(pageInsets.calculateTopPadding(), if (sideInset > 0.dp) 96.dp else 116.dp),
+                    end = pageInsets.calculateEndPadding(androidx.compose.ui.platform.LocalLayoutDirection.current),
+                    bottom = pageInsets.calculateBottomPadding(),
+                ),
+            ) {
             item(key = "header", contentType = "header") {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -175,14 +183,7 @@ fun LocalSongsScreen(
                 }
             }
 
-            if (!audioPermission.granted) {
-                item(key = "permission", contentType = "local_access") {
-                    com.convx.music.ui.screens.library.apple.LocalAccessCard(
-                        blocked = audioPermission.blocked,
-                        onAllow = audioPermission.request,
-                    )
-                }
-            } else if (songs.isEmpty() && !isScanning) {
+            if (songs.isEmpty() && !isScanning) {
                 item(key = "empty", contentType = "local_access") {
                     com.convx.music.ui.component.LocalMusicEmptyState(onScan = { viewModel.scanDevice(context) }, onAddServer = { navController.navigate("settings/network_storage") })
                 }
@@ -202,11 +203,6 @@ fun LocalSongsScreen(
                 }
             }
 
-            if (audioPermission.granted) {
-                item(key = "folders_entry") {
-                    LocalMusicFoldersEntry(count = folders.size, navController = navController)
-                }
-            }
             itemsIndexed(
                 items = visibleSongs,
                 key = { _, song -> song.id },
@@ -253,6 +249,7 @@ fun LocalSongsScreen(
                         },
                 )
             }
+        }
         }
 
         ListScrollRail(

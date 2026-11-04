@@ -8,22 +8,22 @@ package com.convx.music.ui.screens.library.apple
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.convx.music.constants.AlbumSortType
-import com.convx.music.constants.ArtistSortType
-import com.convx.music.constants.AlbumSortTypeKey
 import com.convx.music.constants.AlbumSortDescendingKey
-import com.convx.music.constants.ArtistSortTypeKey
+import com.convx.music.constants.AlbumSortType
+import com.convx.music.constants.AlbumSortTypeKey
 import com.convx.music.constants.ArtistSortDescendingKey
+import com.convx.music.constants.ArtistSortType
+import com.convx.music.constants.ArtistSortTypeKey
+import com.convx.music.constants.LocalOnlyModeKey
+import com.convx.music.constants.PlaylistSortType
+import com.convx.music.constants.SongSortDescendingKey
 import com.convx.music.constants.SongSortType
 import com.convx.music.constants.SongSortTypeKey
-import com.convx.music.constants.SongSortDescendingKey
-import com.convx.music.extensions.toEnum
-import com.convx.music.constants.PlaylistSortType
-import com.convx.music.constants.LocalOnlyModeKey
 import com.convx.music.db.MusicDatabase
 import com.convx.music.db.entities.LocalItem
 import com.convx.music.db.entities.Playlist
-import com.convx.music.utils.SyncUtils
+import com.convx.music.extensions.toEnum
+import com.convx.music.sync.NetworkSyncManager
 import com.convx.music.utils.dataStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -31,7 +31,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -42,12 +41,13 @@ import javax.inject.Inject
 
 /**
  * Apple Music's Library main page data: pinned items on top, and "Recently Added" —
- * device albums and playlists created in this app, newest first.
+ * server albums and playlists, newest first.
  */
 @HiltViewModel
 class AppleLibraryViewModel @Inject constructor(
     private val database: MusicDatabase,
     @ApplicationContext private val context: Context,
+    val syncManager: NetworkSyncManager,
 ) : ViewModel() {
 
     /** Local-only mode: device items only. Otherwise the whole library, online items included. */
@@ -105,18 +105,14 @@ class AppleLibraryViewModel @Inject constructor(
             .map { it.first }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    private var scanJob: kotlinx.coroutines.Job? = null
+    val syncState: StateFlow<NetworkSyncManager.SyncState> = syncManager.syncState
+
     fun scanDevice() {
-        if (scanJob?.isActive == true) return
-        scanJob = viewModelScope.launch(Dispatchers.IO) {
-            try {
-                com.convx.music.utils.LocalAudioScanner.scanAndInsert(context, database)
-            } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                throw cancelled
-            } catch (error: Exception) {
-                com.convx.music.utils.reportException(error)
-            }
-        }
+        sync()
+    }
+
+    fun sync() {
+        syncManager.sync(force = true)
     }
 
     /**

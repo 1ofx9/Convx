@@ -67,7 +67,6 @@ import com.convx.music.ui.utils.bounceClick
 import com.convx.music.ui.utils.plusStart
 import com.convx.music.ui.utils.localPlaylistRoute
 import com.convx.music.ui.utils.sharedArtworkSource
-import com.convx.music.utils.LocalFolderIndex
 import com.convx.music.utils.listItemShape
 import kotlinx.coroutines.flow.first
 
@@ -83,7 +82,6 @@ internal fun LazyListScope.localHomeContent(
     albums: List<Album>,
     artists: List<Artist>,
     playlists: List<Playlist>,
-    folders: List<LocalFolderIndex.Folder>,
     columns: Int,
 ) {
     // Build local shelves from the lists already loaded by the view model.
@@ -161,55 +159,6 @@ internal fun LazyListScope.localHomeContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .bounceClick { deps.navController.navigate(localPlaylistRoute(playlist.id, playlist.thumbnailUrl)) },
-            )
-        }
-    }
-
-    if (folders.isNotEmpty()) {
-        item(key = "local_folders_title", contentType = "section_title") {
-            NavigationTitle(
-                title = stringResource(R.string.folders),
-                modifier = Modifier.animateItem(),
-            )
-        }
-        // Build this lookup once so each folder row can find its thumbnail in O(1).
-        val songById = songs.associateBy { it.id }
-        val shownFolders = folders.take(LocalListPreview)
-
-        itemsIndexed(
-            items = shownFolders,
-            key = { _, folder -> "local_folder_" + folder.path },
-            contentType = { _, _ -> "local_folder" },
-        ) { index, folder ->
-            val thumbnailUrl = remember(folder, songById) {
-                folder.songIds.firstNotNullOfOrNull { songById[it]?.song?.thumbnailUrl }
-            }
-            ListItem(
-                title = folder.name,
-                subtitle = pluralStringResource(
-                    R.plurals.n_song,
-                    folder.songIds.size,
-                    folder.songIds.size,
-                ),
-                thumbnailContent = {
-                    AsyncImage(
-                        model = thumbnailUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        placeholder = painterResource(R.drawable.thumbnail_fallback),
-                        error = painterResource(R.drawable.thumbnail_fallback),
-                        modifier = Modifier
-                            .size(ListThumbnailSize)
-                            .clip(RoundedCornerShape(AppleTokens.Control))
-                            .sharedArtworkSource(folder.path, thumbnailUrl),
-                    )
-                },
-                shape = listItemShape(index, shownFolders.size),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .bounceClick {
-                        deps.navController.navigate("local_folder/" + Uri.encode(folder.path))
-                    },
             )
         }
     }

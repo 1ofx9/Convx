@@ -71,7 +71,8 @@ constructor(
     fun scanLocalFiles() {
         if (scanJob?.isActive == true) return
         scanJob = viewModelScope.launch {
-            runCatching { LocalAudioScanner.scanAndInsert(context, database) }
+            val app = context.applicationContext as? com.convx.music.App
+            app?.syncManager?.get()?.sync(force = true)
         }
     }
 

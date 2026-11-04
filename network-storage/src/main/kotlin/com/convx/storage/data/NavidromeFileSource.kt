@@ -2,7 +2,12 @@ package com.convx.storage.data
 
 import com.convx.storage.domain.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.*
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -17,6 +22,11 @@ import kotlin.coroutines.resumeWithException
 
 class NavidromeFileSource(
     val client: OkHttpClient = OkHttpClient.Builder()
+        .dispatcher(Dispatcher().apply {
+            maxRequests = 32
+            maxRequestsPerHost = 24
+        })
+        .connectionPool(ConnectionPool(32, 5, TimeUnit.MINUTES))
         .followRedirects(true)
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
@@ -66,6 +76,7 @@ class NavidromeFileSource(
         var offset = 0
         val pageSize = 500
         var truncated = false
+        val semaphore = Semaphore(16)
 
         while (tracks.size < maxTracks) {
             val url = "${baseUrl(server)}rest/getAlbumList2.view?type=alphabeticalByName&size=$pageSize&offset=$offset&${authQuery(server)}".toHttpUrl()
@@ -88,65 +99,28 @@ class NavidromeFileSource(
 
             if (albumIds.isEmpty()) break
 
-            for (albumId in albumIds) {
-                if (tracks.size >= maxTracks) {
-                    truncated = true
-                    break
-                }
-                val albumUrl = "${baseUrl(server)}rest/getAlbum.view?id=$albumId&${authQuery(server)}".toHttpUrl()
-                val albumReq = Request.Builder().url(albumUrl).build()
-                client.newCall(albumReq).await().use { response ->
-                    if (!response.isSuccessful) return@use
-                    val json = JSONObject(response.body?.string() ?: "{}")
-                    val subResponse = json.optJSONObject("subsonic-response") ?: return@use
-                    val albumObj = subResponse.optJSONObject("album") ?: return@use
-                    val albumName = albumObj.optString("name").takeIf { it.isNotBlank() }
-                    val artistName = albumObj.optString("artist").takeIf { it.isNotBlank() }
-                    val coverArtId = albumObj.optString("coverArt").takeIf { it.isNotBlank() }
-                    val year = albumObj.optInt("year", -1).takeIf { it > 0 }
-                    val songArray = albumObj.optJSONArray("song") ?: return@use
-
-                    for (s in 0 until songArray.length()) {
-                        if (tracks.size >= maxTracks) {
-                            truncated = true
-                            break
+            // Concurrently fetch all albums in parallel using semaphore
+            val albumTrackLists = coroutineScope {
+                albumIds.map { albumId ->
+                    async {
+                        semaphore.withPermit {
+                            fetchAlbumTracks(server, albumId)
                         }
-                        val songObj = songArray.optJSONObject(s) ?: continue
-                        val songId = songObj.optString("id")
-                        if (songId.isEmpty()) continue
-                        val trackUri = NetworkMediaUri.create(server.id, songId)
-                        if (!existingTrackIds.add(trackUri)) continue
+                    }
+                }.awaitAll()
+            }
 
-                        val title = songObj.optString("title", "Unknown Title")
-                        val songArtist = songObj.optString("artist").takeIf { it.isNotBlank() } ?: artistName
-                        val songAlbum = songObj.optString("album").takeIf { it.isNotBlank() } ?: albumName
-                        val songCover = songObj.optString("coverArt").takeIf { it.isNotBlank() } ?: coverArtId
-                        val duration = songObj.optInt("duration", -1)
-                        val trackNumber = songObj.optInt("track", -1).takeIf { it > 0 }
-                        val songYear = songObj.optInt("year", -1).takeIf { it > 0 } ?: year
-                        val size = songObj.optLong("size", -1L)
-
-                        val artworkUrl = songCover?.let {
-                            "${baseUrl(server)}rest/getCoverArt.view?id=$it&size=800&${authQuery(server)}"
-                        }
-
-                        tracks.add(
-                            NetworkTrack(
-                                id = trackUri,
-                                title = title,
-                                artist = songArtist,
-                                album = songAlbum,
-                                artwork = artworkUrl,
-                                size = size,
-                                duration = duration,
-                                year = songYear,
-                                trackNumber = trackNumber,
-                                albumId = "navidrome_album_${server.id}_$albumId",
-                                artistId = "navidrome_artist_${server.id}_${(songArtist ?: "").hashCode()}",
-                            ),
-                        )
+            for (albumTracks in albumTrackLists) {
+                for (track in albumTracks) {
+                    if (tracks.size >= maxTracks) {
+                        truncated = true
+                        break
+                    }
+                    if (existingTrackIds.add(track.id)) {
+                        tracks.add(track)
                     }
                 }
+                if (truncated) break
             }
 
             offset += pageSize
@@ -157,6 +131,67 @@ class NavidromeFileSource(
         val playlists = fetchPlaylists(server, tracks, existingTrackIds)
 
         NetworkLibrary(tracks = tracks, truncated = truncated, playlists = playlists)
+    }
+
+    private suspend fun fetchAlbumTracks(
+        server: NetworkServer,
+        albumId: String,
+    ): List<NetworkTrack> {
+        val albumUrl = "${baseUrl(server)}rest/getAlbum.view?id=$albumId&${authQuery(server)}".toHttpUrl()
+        val albumReq = Request.Builder().url(albumUrl).build()
+        return try {
+            client.newCall(albumReq).await().use { response ->
+                if (!response.isSuccessful) return emptyList()
+                val json = JSONObject(response.body?.string() ?: "{}")
+                val subResponse = json.optJSONObject("subsonic-response") ?: return emptyList()
+                val albumObj = subResponse.optJSONObject("album") ?: return emptyList()
+                val albumName = albumObj.optString("name").takeIf { it.isNotBlank() }
+                val artistName = albumObj.optString("artist").takeIf { it.isNotBlank() }
+                val coverArtId = albumObj.optString("coverArt").takeIf { it.isNotBlank() }
+                val year = albumObj.optInt("year", -1).takeIf { it > 0 }
+                val songArray = albumObj.optJSONArray("song") ?: return emptyList()
+
+                val list = ArrayList<NetworkTrack>(songArray.length())
+                for (s in 0 until songArray.length()) {
+                    val songObj = songArray.optJSONObject(s) ?: continue
+                    val songId = songObj.optString("id")
+                    if (songId.isEmpty()) continue
+                    val trackUri = NetworkMediaUri.create(server.id, songId)
+
+                    val title = songObj.optString("title", "Unknown Title")
+                    val songArtist = songObj.optString("artist").takeIf { it.isNotBlank() } ?: artistName
+                    val songAlbum = songObj.optString("album").takeIf { it.isNotBlank() } ?: albumName
+                    val songCover = songObj.optString("coverArt").takeIf { it.isNotBlank() } ?: coverArtId
+                    val duration = songObj.optInt("duration", -1)
+                    val trackNumber = songObj.optInt("track", -1).takeIf { it > 0 }
+                    val songYear = songObj.optInt("year", -1).takeIf { it > 0 } ?: year
+                    val size = songObj.optLong("size", -1L)
+
+                    val artworkUrl = songCover?.let {
+                        "${baseUrl(server)}rest/getCoverArt.view?id=$it&size=800&${authQuery(server)}"
+                    }
+
+                    list.add(
+                        NetworkTrack(
+                            id = trackUri,
+                            title = title,
+                            artist = songArtist,
+                            album = songAlbum,
+                            artwork = artworkUrl,
+                            size = size,
+                            duration = duration,
+                            year = songYear,
+                            trackNumber = trackNumber,
+                            albumId = "navidrome_album_${server.id}_$albumId",
+                            artistId = "navidrome_artist_${server.id}_${(songArtist ?: "").hashCode()}",
+                        ),
+                    )
+                }
+                list
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
     }
 
     private suspend fun fetchPlaylists(
@@ -186,72 +221,89 @@ class NavidromeFileSource(
                 list
             }
 
-            for ((plId, plName, plCover) in playlistSummaries) {
-                try {
-                    val detailUrl = "${baseUrl(server)}rest/getPlaylist.view?id=$plId&${authQuery(server)}".toHttpUrl()
-                    val detailReq = Request.Builder().url(detailUrl).build()
-                    val trackIds = client.newCall(detailReq).await().use { resp ->
-                        if (!resp.isSuccessful) return@use emptyList<String>()
-                        val json = JSONObject(resp.body?.string() ?: "{}")
-                        val sub = json.optJSONObject("subsonic-response") ?: return@use emptyList()
-                        val plObj = sub.optJSONObject("playlist") ?: return@use emptyList()
-                        val entryArr = plObj.optJSONArray("entry") ?: return@use emptyList()
-                        val ids = mutableListOf<String>()
+            val plSemaphore = Semaphore(8)
+            val playlists = coroutineScope {
+                playlistSummaries.map { (plId, plName, plCover) ->
+                    async {
+                        plSemaphore.withPermit {
+                            try {
+                                val detailUrl = "${baseUrl(server)}rest/getPlaylist.view?id=$plId&${authQuery(server)}".toHttpUrl()
+                                val detailReq = Request.Builder().url(detailUrl).build()
+                                val (trackIds, newTracks) = client.newCall(detailReq).await().use { resp ->
+                                    if (!resp.isSuccessful) return@use Pair(emptyList<String>(), emptyList<NetworkTrack>())
+                                    val json = JSONObject(resp.body?.string() ?: "{}")
+                                    val sub = json.optJSONObject("subsonic-response") ?: return@use Pair(emptyList(), emptyList())
+                                    val plObj = sub.optJSONObject("playlist") ?: return@use Pair(emptyList(), emptyList())
+                                    val entryArr = plObj.optJSONArray("entry") ?: return@use Pair(emptyList(), emptyList())
+                                    val ids = mutableListOf<String>()
+                                    val extraTracks = mutableListOf<NetworkTrack>()
 
-                        for (j in 0 until entryArr.length()) {
-                            val entry = entryArr.optJSONObject(j) ?: continue
-                            val songId = entry.optString("id")
-                            if (songId.isEmpty()) continue
-                            val trackUri = NetworkMediaUri.create(server.id, songId)
-                            ids.add(trackUri)
+                                    for (j in 0 until entryArr.length()) {
+                                        val entry = entryArr.optJSONObject(j) ?: continue
+                                        val songId = entry.optString("id")
+                                        if (songId.isEmpty()) continue
+                                        val trackUri = NetworkMediaUri.create(server.id, songId)
+                                        ids.add(trackUri)
 
-                            // If this track was not part of the album scan, add it to tracks now
-                            if (existingTrackIds.add(trackUri)) {
-                                val title = entry.optString("title", "Unknown Title")
-                                val artist = entry.optString("artist").takeIf { it.isNotBlank() }
-                                val album = entry.optString("album").takeIf { it.isNotBlank() }
-                                val cover = entry.optString("coverArt").takeIf { it.isNotBlank() }
-                                val duration = entry.optInt("duration", -1)
-                                val trackNum = entry.optInt("track", -1).takeIf { it > 0 }
-                                val year = entry.optInt("year", -1).takeIf { it > 0 }
-                                val size = entry.optLong("size", -1L)
-                                val artworkUrl = cover?.let {
+                                        val title = entry.optString("title", "Unknown Title")
+                                        val artist = entry.optString("artist").takeIf { it.isNotBlank() }
+                                        val album = entry.optString("album").takeIf { it.isNotBlank() }
+                                        val cover = entry.optString("coverArt").takeIf { it.isNotBlank() }
+                                        val duration = entry.optInt("duration", -1)
+                                        val trackNum = entry.optInt("track", -1).takeIf { it > 0 }
+                                        val year = entry.optInt("year", -1).takeIf { it > 0 }
+                                        val size = entry.optLong("size", -1L)
+                                        val artworkUrl = cover?.let {
+                                            "${baseUrl(server)}rest/getCoverArt.view?id=$it&size=800&${authQuery(server)}"
+                                        }
+
+                                        extraTracks.add(
+                                            NetworkTrack(
+                                                id = trackUri,
+                                                title = title,
+                                                artist = artist,
+                                                album = album,
+                                                artwork = artworkUrl,
+                                                size = size,
+                                                duration = duration,
+                                                year = year,
+                                                trackNumber = trackNum,
+                                                albumId = album?.let { "navidrome_album_${server.id}_${it.hashCode()}" },
+                                                artistId = artist?.let { "navidrome_artist_${server.id}_${it.hashCode()}" },
+                                            ),
+                                        )
+                                    }
+                                    Pair(ids, extraTracks)
+                                }
+
+                                val artworkUrl = plCover?.let {
                                     "${baseUrl(server)}rest/getCoverArt.view?id=$it&size=800&${authQuery(server)}"
                                 }
 
-                                tracks.add(
-                                    NetworkTrack(
-                                        id = trackUri,
-                                        title = title,
-                                        artist = artist,
-                                        album = album,
-                                        artwork = artworkUrl,
-                                        size = size,
-                                        duration = duration,
-                                        year = year,
-                                        trackNumber = trackNum,
-                                        albumId = album?.let { "navidrome_album_${server.id}_${it.hashCode()}" },
-                                        artistId = artist?.let { "navidrome_artist_${server.id}_${it.hashCode()}" },
+                                Pair(
+                                    NetworkPlaylist(
+                                        id = "navidrome_pl_${server.id}_$plId",
+                                        name = plName,
+                                        thumbnailUrl = artworkUrl,
+                                        trackIds = trackIds,
                                     ),
+                                    newTracks,
                                 )
+                            } catch (_: Exception) {
+                                null
                             }
                         }
-                        ids
                     }
+                }.awaitAll().filterNotNull()
+            }
 
-                    val artworkUrl = plCover?.let {
-                        "${baseUrl(server)}rest/getCoverArt.view?id=$it&size=800&${authQuery(server)}"
+            for ((pl, extraTracks) in playlists) {
+                result.add(pl)
+                for (extra in extraTracks) {
+                    if (existingTrackIds.add(extra.id)) {
+                        tracks.add(extra)
                     }
-
-                    result.add(
-                        NetworkPlaylist(
-                            id = "navidrome_pl_${server.id}_$plId",
-                            name = plName,
-                            thumbnailUrl = artworkUrl,
-                            trackIds = trackIds,
-                        ),
-                    )
-                } catch (_: Exception) {}
+                }
             }
         } catch (_: Exception) {}
         result

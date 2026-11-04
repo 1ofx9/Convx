@@ -198,19 +198,7 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val app = applicationContext as? App ?: return@launch
-                val repo = app.networkRepository.get()
-                val servers = repo.loadServers()
-                if (servers.isNotEmpty()) {
-                    val count = database.get().getSongCount()
-                    if (count == 0) {
-                        servers.forEach { server ->
-                            runCatching {
-                                NetworkLibraryImporter.import(database.get(), repo, server.id)
-                            }
-                        }
-                    }
-                }
+                (applicationContext as? App)?.syncManager?.get()?.sync(force = false)
             } catch (_: Exception) {
             }
         }
@@ -233,6 +221,11 @@ class MainActivity : ComponentActivity() {
                 if (showIntro) com.convx.music.ui.component.ConvxIntro(onFinished = { showIntro = false })
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        (applicationContext as? App)?.syncManager?.get()?.sync(force = false)
     }
 
     internal val deepLinkRouter by lazy {

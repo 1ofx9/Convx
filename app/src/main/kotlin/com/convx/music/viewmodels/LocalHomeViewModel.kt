@@ -19,27 +19,25 @@ import com.convx.music.db.entities.Artist
 import com.convx.music.db.entities.Playlist
 import com.convx.music.db.entities.Song
 import com.convx.music.extensions.toEnum
-import com.convx.music.utils.LocalAudioScanner
-import com.convx.music.utils.LocalFolderIndex
+import com.convx.music.sync.NetworkSyncManager
 import com.convx.music.utils.dataStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** Home in local-only mode: Room rows and the folder index, never the network. */
+/** Home in local-only mode: Room rows observed reactively, synced from network servers. */
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class LocalHomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val database: MusicDatabase,
+    val syncManager: NetworkSyncManager,
 ) : ViewModel() {
     val songs: StateFlow<List<Song>> = context.dataStore.data
         .map { it[LocalSongSortTypeKey].toEnum(SongSortType.NAME) to (it[LocalSongSortDescendingKey] ?: false) }
@@ -57,33 +55,15 @@ class LocalHomeViewModel @Inject constructor(
     val artists: StateFlow<List<Artist>> = database.artistsLocalByNameAsc()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Playlists made here; a synced YouTube playlist carries a browseId.
+    // Playlists synced from Navidrome
     val playlists: StateFlow<List<Playlist>> = database.playlists(PlaylistSortType.CREATE_DATE, true)
         .map { list -> list.filter { it.playlist.browseId == null } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val folders = MutableStateFlow<List<LocalFolderIndex.Folder>>(emptyList())
-    val isRefreshing = MutableStateFlow(false)
+    val syncState: StateFlow<NetworkSyncManager.SyncState> = syncManager.syncState
 
-    init {
-        viewModelScope.launch(Dispatchers.IO) { loadFolders() }
-    }
-
-    /** Rescans the device, then rebuilds the folder index. */
+    /** Synchronizes with configured Navidrome/Subsonic servers. */
     fun refresh() {
-        if (isRefreshing.value) return
-        viewModelScope.launch(Dispatchers.IO) {
-            isRefreshing.value = true
-            try {
-                runCatching { LocalAudioScanner.scanAndInsert(context, database) }
-                loadFolders()
-            } finally {
-                isRefreshing.value = false
-            }
-        }
-    }
-
-    private suspend fun loadFolders() {
-        folders.value = runCatching { LocalFolderIndex.load(context) }.getOrDefault(emptyList())
+        syncManager.sync(force = true)
     }
 }

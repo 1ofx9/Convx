@@ -72,6 +72,9 @@ class App : Application(), SingletonImageLoader.Factory {
     @Inject
     lateinit var networkRepository: dagger.Lazy<com.convx.storage.data.NetworkMusicRepository>
 
+    @Inject
+    lateinit var syncManager: dagger.Lazy<com.convx.music.sync.NetworkSyncManager>
+
     override fun onCreate() {
         super.onCreate()
         // The recovery activity runs in its own process. Do not reopen the database,

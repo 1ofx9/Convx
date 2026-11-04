@@ -1946,6 +1946,24 @@ interface DatabaseDao {
     @Upsert
     fun upsert(song: SongEntity)
 
+    @Upsert
+    fun upsertSongs(songs: List<SongEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertArtists(artists: List<ArtistEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertAlbums(albums: List<AlbumEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertSongArtistMaps(maps: List<SongArtistMap>)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertSongAlbumMaps(maps: List<SongAlbumMap>)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertPlaylistSongMaps(maps: List<PlaylistSongMap>)
+
     @Delete
     fun delete(song: SongEntity)
 

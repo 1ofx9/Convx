@@ -1,3 +1,8 @@
+/**
+ * Convx Project (C) 2026
+ * Licensed under GPL-3.0 | See git history for contributors
+ */
+
 package com.convx.music.ui.screens.library
 
 import android.content.Context
@@ -7,23 +12,22 @@ import com.convx.music.db.MusicDatabase
 import com.convx.music.db.entities.Album
 import com.convx.music.db.entities.Artist
 import com.convx.music.db.entities.Song
+import com.convx.music.sync.NetworkSyncManager
 import com.convx.music.utils.LocalAudioScanner
 import com.convx.music.utils.LocalFolderIndex
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.combine
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
 class LocalMusicViewModel @Inject constructor(
     private val database: MusicDatabase,
+    val syncManager: NetworkSyncManager,
 ) : ViewModel() {
 
     val songs: StateFlow<List<Song>> = database.localSongsByNameAsc()
@@ -35,50 +39,16 @@ class LocalMusicViewModel @Inject constructor(
     val artists: StateFlow<List<Artist>> = database.artistsLocalByNameAsc()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private val indexedFolders = MutableStateFlow<List<LocalFolderIndex.Folder>>(emptyList())
-    val folders = combine(indexedFolders, songs) { folders, songs ->
-        val ids = songs.mapTo(hashSetOf()) { it.id }
-        folders.map { it.copy(songIds = it.songIds.filter(ids::contains)) }
-            .filter { it.songIds.isNotEmpty() }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val folders: StateFlow<List<LocalFolderIndex.Folder>> = MutableStateFlow(emptyList())
 
-    private val _isScanning = MutableStateFlow(false)
-    val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
+    val isScanning: StateFlow<Boolean> = syncManager.syncState
+        .map { it.isSyncing }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     private val _scanResult = MutableStateFlow<LocalAudioScanner.ScanResult?>(null)
     val scanResult: StateFlow<LocalAudioScanner.ScanResult?> = _scanResult.asStateFlow()
 
-    /** Set once a scan finishes, so re-entering the screen doesn't rescan on every visit. */
-    private var lastScanAt = 0L
-
-    /**
-     * [force] is what a tapped Rescan button passes; screen-entry auto-scans leave it
-     * false so a quick trip to the player and back doesn't kick off a full MediaStore
-     * sweep every time.
-     */
-    fun scanDevice(context: Context, force: Boolean = true) {
-        if (_isScanning.value) return
-        if (!force && System.currentTimeMillis() - lastScanAt < AUTO_SCAN_INTERVAL_MS) return
-        viewModelScope.launch {
-            _isScanning.value = true
-            try {
-                val result = LocalAudioScanner.scanAndInsert(context, database)
-                _scanResult.value = result
-                indexedFolders.value = LocalFolderIndex.load(context)
-                lastScanAt = System.currentTimeMillis()
-                Timber.tag("LocalMusicViewModel").i("Scan complete: $result")
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Timber.tag("LocalMusicViewModel").e(e, "Scan failed")
-            } finally {
-                _isScanning.value = false
-            }
-        }
-    }
-
-    private companion object {
-        /** How stale an auto-scan may be before entering the screen triggers a fresh one. */
-        const val AUTO_SCAN_INTERVAL_MS = 5 * 60 * 1000L
+    fun scanDevice(context: Context? = null, force: Boolean = true) {
+        syncManager.sync(force = force)
     }
 }

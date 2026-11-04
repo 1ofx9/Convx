@@ -115,7 +115,8 @@ constructor(
         viewModelScope.launch(Dispatchers.IO) {
             _isScanning.value = true
             try {
-                com.convx.music.utils.LocalAudioScanner.scanAndInsert(context, database)
+                val app = context.applicationContext as? com.convx.music.App
+                app?.syncManager?.get()?.sync(force = true)?.join()
             } catch (e: Exception) {
                 Timber.tag("AutoPlaylistViewModel").e(e, "local scan failed")
             } finally {
