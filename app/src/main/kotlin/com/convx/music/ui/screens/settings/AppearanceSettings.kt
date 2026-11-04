@@ -366,7 +366,7 @@ fun AppearanceSettings(
                     IosSettingsItem(
                         icon = painterResource(R.drawable.crop),
                         title = { Text("Hide status bar and navigation buttons") },
-                        description = { Text("Immersive fullscreen mode; swipe from edge to show briefly") },
+                        description = { Text("Hide status and navigation bars when the player is expanded; swipe from edge to show briefly") },
                         trailingContent = {
                             Switch(
                                 checked = hideSystemBars,

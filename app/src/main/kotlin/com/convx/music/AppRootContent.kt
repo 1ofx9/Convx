@@ -95,6 +95,9 @@ import com.convx.music.constants.DefaultOpenTabKey
 import com.convx.music.constants.DockedAccessoryHeight
 import com.convx.music.constants.EnableSettingsPopupKey
 import com.convx.music.constants.ForceTabletLayoutKey
+import com.convx.music.constants.HideSystemBarsKey
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.convx.music.constants.IosOverscrollKey
 import com.convx.music.constants.MiniPlayerHeight
 import com.convx.music.constants.NavigationBarAnimationSpec
@@ -494,6 +497,26 @@ internal fun AppRootContent(
             // owned here, above both the player and the nav bar the pill docks into --
             // remembering them any lower would release them mid-gesture.
             InstallPlayerMorphLayers()
+
+            val (hideSystemBars) = rememberPreference(HideSystemBarsKey, false)
+            val shouldHideSystemBars by remember(hideSystemBars, playerBottomSheetState) {
+                derivedStateOf { hideSystemBars && playerBottomSheetState.isExpanded }
+            }
+            DisposableEffect(shouldHideSystemBars) {
+                val insetsController = WindowInsetsControllerCompat(activity.window, activity.window.decorView)
+                if (shouldHideSystemBars) {
+                    insetsController.systemBarsBehavior =
+                        WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                    insetsController.hide(WindowInsetsCompat.Type.systemBars())
+                } else {
+                    insetsController.show(WindowInsetsCompat.Type.systemBars())
+                }
+                onDispose {
+                    if (shouldHideSystemBars) {
+                        insetsController.show(WindowInsetsCompat.Type.systemBars())
+                    }
+                }
+            }
 
             val playerAboveBars by remember(playerBottomSheetState) {
                 derivedStateOf { playerBottomSheetState.progress > 0f }

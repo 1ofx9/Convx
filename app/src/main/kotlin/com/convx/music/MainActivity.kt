@@ -180,21 +180,6 @@ class MainActivity : ComponentActivity() {
                 }
         }
 
-        lifecycleScope.launch {
-            val insetsController = WindowInsetsControllerCompat(window, window.decorView)
-            dataStore.data
-                .map { it[HideSystemBarsKey] ?: false }
-                .distinctUntilChanged()
-                .collectLatest { hideBars ->
-                    if (hideBars) {
-                        insetsController.systemBarsBehavior =
-                            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                        insetsController.hide(WindowInsetsCompat.Type.systemBars())
-                    } else {
-                        insetsController.show(WindowInsetsCompat.Type.systemBars())
-                    }
-                }
-        }
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
